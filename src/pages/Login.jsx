@@ -38,7 +38,7 @@ export default function Login() {
           {isLogin ? 'Bon retour !' : 'Bienvenue'}
         </h1>
         <p className="text-gray-500 mb-8">
-          L'Attrape-Rêves Courses
+          Mathilde & Louis
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">

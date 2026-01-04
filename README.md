@@ -1,16 +1,29 @@
-# React + Vite
+# Mathilde & Louis - Courses 🛒
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Une application de liste de courses collaborative, ultra-rapide et intuitive, conçue spécialement pour Mathilde et Louis.
 
-Currently, two official plugins are available:
+## 🔗 Liens
+- **Production URL**: https://attrape-reves-courses.pages.dev
+- **Repo GitHub**: https://github.com/louispick/liste-courses
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🛠 Tech Stack
+- **Frontend**: React (Vite) + Tailwind CSS
+- **Backend**: Firebase (Auth + Firestore)
+- **Hosting**: Cloudflare Pages
+- **Smart Features**: 
+  - Regex parsing (Quantité/Unité/Nom)
+  - Fuzzy Search (Doublons)
+  - Auto-catégorisation
 
-## React Compiler
+## 🚀 Fonctionnalités
+1. **Saisie Rapide**: "2kg tomates" est automatiquement parsé.
+2. **Anti-Doublon**: Détection intelligente (ex: "Oeuf" vs "Oeufs").
+3. **Catégories**: Tri automatique par rayon.
+4. **Recettes**: Ajout en un clic de tous les ingrédients d'une recette.
+5. **Multi-User**: Liste synchronisée en temps réel entre les comptes connectés.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## ⚠️ Configuration Requise
+Pour que l'application fonctionne, **Firebase Authentication (Email/Password)** et **Firestore Database** doivent être activés dans la console Firebase.
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 📱 Installation (PWA)
+L'application est responsive et conçue pour être "installée" sur l'écran d'accueil de ton mobile (Ajouter à l'écran d'accueil).

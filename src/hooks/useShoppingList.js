@@ -5,6 +5,7 @@ import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, deleteD
 export const useShoppingList = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const q = query(
@@ -13,34 +14,55 @@ export const useShoppingList = () => {
       orderBy('createdAt', 'desc')
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const parsed = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      setItems(parsed);
-      setLoading(false);
-    });
+    const unsubscribe = onSnapshot(q, 
+      (snapshot) => {
+        const parsed = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        setItems(parsed);
+        setLoading(false);
+        setError(null);
+      },
+      (err) => {
+        console.error("Firestore Error:", err);
+        setError(err);
+        setLoading(false);
+      }
+    );
 
     return unsubscribe;
   }, []);
 
   const addItem = async (itemData) => {
-    // Check for duplicates handled in UI or here? UI is better for user confirmation.
-    // This function just adds.
-    await addDoc(collection(db, 'items'), {
-      ...itemData,
-      checked: false,
-      createdAt: serverTimestamp()
-    });
+    try {
+      await addDoc(collection(db, 'items'), {
+        ...itemData,
+        checked: false,
+        createdAt: serverTimestamp()
+      });
+    } catch (err) {
+      console.error("Add Item Error:", err);
+      throw err;
+    }
   };
 
   const toggleItem = async (id, currentStatus) => {
-    await updateDoc(doc(db, 'items', id), {
-      checked: !currentStatus
-    });
+    try {
+      await updateDoc(doc(db, 'items', id), {
+        checked: !currentStatus
+      });
+    } catch (err) {
+      console.error("Toggle Item Error:", err);
+      throw err;
+    }
   };
 
   const deleteItem = async (id) => {
-    await deleteDoc(doc(db, 'items', id));
+    try {
+      await deleteDoc(doc(db, 'items', id));
+    } catch (err) {
+      console.error("Delete Item Error:", err);
+      throw err;
+    }
   };
 
-  return { items, loading, addItem, toggleItem, deleteItem };
+  return { items, loading, error, addItem, toggleItem, deleteItem };
 };
