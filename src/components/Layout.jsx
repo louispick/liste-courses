@@ -11,6 +11,7 @@ export default function Layout() {
     { path: '/', icon: List, label: 'Liste' },
     { path: '/recipes', icon: ChefHat, label: 'Recettes' },
     { path: '/history', icon: History, label: 'Historique' },
+    { path: '/profile', icon: User, label: 'Profil' },
   ];
 
   return (
@@ -43,15 +44,6 @@ export default function Layout() {
               </Link>
             );
           })}
-          
-          <button
-            onClick={logout}
-            className="flex flex-col items-center gap-1 text-gray-400 hover:text-red-500 transition-colors"
-          >
-            <div className="p-2">
-                <User className="w-6 h-6" />
-            </div>
-          </button>
         </div>
       </nav>
     </div>

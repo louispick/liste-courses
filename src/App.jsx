@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Home from './pages/Home';
 import Recipes from './pages/Recipes';
 import History from './pages/History';
+import Profile from './pages/Profile';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
           <Route index element={<Home />} />
           <Route path="recipes" element={<Recipes />} />
           <Route path="history" element={<History />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" />} />
