@@ -5,7 +5,7 @@ import CategoryList from '../components/CategoryList';
 import { Loader2, LogOut } from 'lucide-react';
 
 export default function Home() {
-  const { items, loading, error, addItem, toggleItem, deleteItem, clearCheckedItems } = useShoppingList();
+  const { items, loading, error, addItem, updateItem, toggleItem, deleteItem, clearCheckedItems } = useShoppingList();
   const { logout } = useAuth();
 
   const handleAdd = async (parsedItem) => {
@@ -41,7 +41,6 @@ export default function Home() {
 
       <SmartInput onAdd={handleAdd} existingItems={items} />
 
-      {/* Error is less likely now with simplified query, but kept just in case */}
       {error && (
         <div className="bg-red-50 text-red-600 p-4 rounded-2xl mb-6 text-sm">
             <p className="font-bold">Erreur : {error.code}</p>
@@ -58,6 +57,7 @@ export default function Home() {
           items={items} 
           onToggle={toggleItem} 
           onDelete={deleteItem}
+          onUpdate={updateItem}
           onClearChecked={clearCheckedItems}
         />
       )}
