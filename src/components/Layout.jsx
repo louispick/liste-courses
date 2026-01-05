@@ -1,17 +1,14 @@
 import { Outlet, useLocation, Link } from 'react-router-dom';
-import { List, ChefHat, History, User } from 'lucide-react';
+import { List, ChefHat, History, User, LogOut } from 'lucide-react';
 import clsx from 'clsx';
-import { useAuth } from '../hooks/useAuth';
 
 export default function Layout() {
   const { pathname } = useLocation();
-  const { logout } = useAuth();
 
   const navItems = [
     { path: '/', icon: List, label: 'Liste' },
     { path: '/recipes', icon: ChefHat, label: 'Recettes' },
     { path: '/history', icon: History, label: 'Historique' },
-    { path: '/profile', icon: User, label: 'Profil' },
   ];
 
   return (
@@ -23,7 +20,7 @@ export default function Layout() {
 
       {/* Bottom Nav */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-4 rounded-t-3xl shadow-[0_-5px_20px_-5px_rgba(0,0,0,0.05)] z-40 max-w-md mx-auto">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-around items-center">
           {navItems.map(({ path, icon: Icon, label }) => {
             const isActive = pathname === path;
             return (
@@ -31,7 +28,7 @@ export default function Layout() {
                 key={path}
                 to={path}
                 className={clsx(
-                  "flex flex-col items-center gap-1 transition-colors",
+                  "flex flex-col items-center gap-1 transition-colors min-w-[64px]",
                   isActive ? "text-deep-blue" : "text-gray-400 hover:text-gray-600"
                 )}
               >

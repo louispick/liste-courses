@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useRecipes } from '../hooks/useRecipes';
 import { useShoppingList } from '../hooks/useShoppingList';
 import { parseInput } from '../lib/parser';
-import { Plus, Trash2, ChefHat, ArrowRight } from 'lucide-react';
+import { Plus, Trash2, ChefHat, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import clsx from 'clsx';
 
 export default function Recipes() {
   const { recipes, addRecipe, deleteRecipe } = useRecipes();
@@ -10,13 +11,15 @@ export default function Recipes() {
   
   const [showForm, setShowForm] = useState(false);
   const [newTitle, setNewTitle] = useState('');
-  const [newIngredients, setNewIngredients] = useState(''); // Text area input
+  const [newIngredients, setNewIngredients] = useState('');
+  
+  // Track expanded recipe card
+  const [expandedId, setExpandedId] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!newTitle.trim() || !newIngredients.trim()) return;
 
-    // Parse ingredients line by line
     const lines = newIngredients.split('\n');
     const ingredients = lines
       .map(line => parseInput(line))
@@ -30,14 +33,20 @@ export default function Recipes() {
     setShowForm(false);
   };
 
-  const handleAddToList = async (recipe) => {
-    // Add all ingredients to shopping list
-    // Note: We're not doing duplicate checks here for simplicity in this MVP version
-    // but the system handles multiple items fine.
-    for (const ingredient of recipe.ingredients) {
-      await addItem(ingredient);
+  const handleAddAll = async (e, recipe) => {
+    e.stopPropagation();
+    if(confirm(`Ajouter tout les ingrédients de "${recipe.title}" ?`)) {
+        for (const ingredient of recipe.ingredients) {
+            await addItem(ingredient);
+        }
     }
-    alert(`Ingrédients de "${recipe.title}" ajoutés !`);
+  };
+
+  const handleAddOne = async (e, ingredient) => {
+    e.stopPropagation();
+    await addItem(ingredient);
+    // Visual feedback usually needed, but generic alert is intrusive.
+    // Ideally use a toast, for now we assume it works.
   };
 
   return (
@@ -48,7 +57,7 @@ export default function Recipes() {
         </h1>
         <button 
           onClick={() => setShowForm(!showForm)}
-          className="bg-sun-yellow text-deep-blue p-2 rounded-xl"
+          className="bg-sun-yellow text-deep-blue p-2 rounded-xl shadow-md active:scale-95 transition-transform"
         >
           <Plus />
         </button>
@@ -76,31 +85,74 @@ export default function Recipes() {
       )}
 
       <div className="space-y-4">
-        {recipes.map(recipe => (
-          <div key={recipe.id} className="bg-white rounded-3xl p-5 soft-shadow">
-            <div className="flex justify-between items-start mb-3">
-              <div className="flex items-center gap-2">
-                <ChefHat className="text-sun-yellow w-6 h-6" />
-                <h3 className="font-bold text-lg text-deep-blue">{recipe.title}</h3>
-              </div>
-              <button onClick={() => deleteRecipe(recipe.id)} className="text-gray-300 hover:text-red-400">
-                <Trash2 className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <p className="text-gray-500 text-sm mb-4">
-              {recipe.ingredients.length} ingrédients
-            </p>
+        {recipes.map(recipe => {
+            const isExpanded = expandedId === recipe.id;
 
-            <button 
-              onClick={() => handleAddToList(recipe)}
-              className="w-full bg-gray-100 hover:bg-sun-yellow hover:text-deep-blue transition-colors text-gray-700 font-semibold py-2 rounded-xl flex items-center justify-center gap-2"
-            >
-              <span>Tout ajouter à la liste</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        ))}
+            return (
+                <div 
+                    key={recipe.id} 
+                    className="bg-white rounded-3xl soft-shadow overflow-hidden transition-all duration-300"
+                >
+                    <div 
+                        onClick={() => setExpandedId(isExpanded ? null : recipe.id)}
+                        className="p-5 flex justify-between items-center cursor-pointer hover:bg-gray-50"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="bg-sun-yellow/20 p-2 rounded-xl text-deep-blue">
+                                <ChefHat className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-lg text-deep-blue">{recipe.title}</h3>
+                                <p className="text-gray-400 text-sm">
+                                    {recipe.ingredients.length} ingrédients
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                             {/* Delete Button (Small) */}
+                             <button 
+                                onClick={(e) => { e.stopPropagation(); deleteRecipe(recipe.id); }} 
+                                className="p-2 text-gray-300 hover:text-red-400"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                            {isExpanded ? <ChevronUp className="text-gray-400" /> : <ChevronDown className="text-gray-400" />}
+                        </div>
+                    </div>
+
+                    {/* EXPANDED CONTENT */}
+                    {isExpanded && (
+                        <div className="px-5 pb-5 bg-gray-50/50 border-t border-gray-100 pt-4">
+                            <button 
+                                onClick={(e) => handleAddAll(e, recipe)}
+                                className="w-full mb-4 bg-deep-blue text-white font-semibold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 hover:bg-blue-800 transition-colors"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Tout ajouter à la liste
+                            </button>
+
+                            <ul className="space-y-2">
+                                {recipe.ingredients.map((ing, idx) => (
+                                    <li key={idx} className="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100">
+                                        <span className="text-gray-700 font-medium">
+                                            {ing.name} <span className="text-gray-400 font-normal text-sm ml-1">{ing.qty > 1 ? `(${ing.qty} ${ing.unit})` : ''}</span>
+                                        </span>
+                                        <button 
+                                            onClick={(e) => handleAddOne(e, ing)}
+                                            className="text-sun-yellow hover:text-orange-400 bg-yellow-50 p-1.5 rounded-lg active:scale-95 transition-transform"
+                                            title="Ajouter cet ingrédient"
+                                        >
+                                            <Plus className="w-5 h-5" />
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                </div>
+            );
+        })}
       </div>
     </div>
   );

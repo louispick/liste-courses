@@ -1,10 +1,12 @@
 import { useShoppingList } from '../hooks/useShoppingList';
+import { useAuth } from '../hooks/useAuth';
 import SmartInput from '../components/SmartInput';
 import CategoryList from '../components/CategoryList';
-import { Loader2, AlertCircle, ExternalLink } from 'lucide-react';
+import { Loader2, LogOut } from 'lucide-react';
 
 export default function Home() {
-  const { items, loading, error, addItem, toggleItem, deleteItem } = useShoppingList();
+  const { items, loading, error, addItem, toggleItem, deleteItem, clearCheckedItems } = useShoppingList();
+  const { logout } = useAuth();
 
   const handleAdd = async (parsedItem) => {
     try {
@@ -14,46 +16,36 @@ export default function Home() {
     }
   };
 
+  const handleLogout = () => {
+      if(confirm("Se déconnecter ?")) {
+          logout();
+      }
+  };
+
   return (
     <div>
-      <header className="mb-6 mt-2 px-2">
-        <h1 className="text-3xl font-bold text-deep-blue tracking-tight">
-          Mathilde & Louis <span className="text-sun-yellow">Courses</span>
+      <header className="mb-6 mt-2 px-2 flex justify-between items-start">
+        <h1 className="text-3xl font-bold text-deep-blue tracking-tight leading-none">
+          Mathilde & Louis <br/>
+          <span className="text-sun-yellow">Courses</span>
         </h1>
+        
+        <button 
+            onClick={handleLogout}
+            className="text-gray-300 hover:text-red-400 p-2"
+            title="Se déconnecter"
+        >
+            <LogOut className="w-5 h-5" />
+        </button>
       </header>
 
       <SmartInput onAdd={handleAdd} existingItems={items} />
 
+      {/* Error is less likely now with simplified query, but kept just in case */}
       {error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-2xl mb-6 soft-shadow">
-            <div className="flex gap-3 items-start">
-              <AlertCircle className="w-6 h-6 shrink-0 mt-0.5" />
-              <div>
-                  <h3 className="font-bold">Configuration requise</h3>
-                  <p className="text-sm mt-1">
-                      Une configuration est manquante sur votre base de données.
-                  </p>
-                  
-                  {error.message && error.message.includes("requires an index") ? (
-                    <div className="mt-3">
-                      <p className="text-sm font-semibold mb-2">Cliquez sur ce lien pour réparer :</p>
-                      <a 
-                        href={error.message.match(/https:\/\/console\.firebase\.google\.com[^\s]*/)?.[0]} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 bg-red-100 px-3 py-2 rounded-lg text-xs break-all hover:bg-red-200 transition-colors"
-                      >
-                        <ExternalLink className="w-3 h-3 shrink-0" />
-                        Créer l'index manquant
-                      </a>
-                    </div>
-                  ) : (
-                    <p className="text-xs mt-2 bg-red-100 p-2 rounded">
-                        Code: {error.code}
-                    </p>
-                  )}
-              </div>
-            </div>
+        <div className="bg-red-50 text-red-600 p-4 rounded-2xl mb-6 text-sm">
+            <p className="font-bold">Erreur : {error.code}</p>
+            <p>{error.message}</p>
         </div>
       )}
 
@@ -65,7 +57,8 @@ export default function Home() {
         <CategoryList 
           items={items} 
           onToggle={toggleItem} 
-          onDelete={deleteItem} 
+          onDelete={deleteItem}
+          onClearChecked={clearCheckedItems}
         />
       )}
     </div>
