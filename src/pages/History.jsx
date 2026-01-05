@@ -10,39 +10,53 @@ export default function History() {
   const { addItem } = useShoppingList();
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchHistory = async () => {
-      // On récupère les 50 derniers achats
-      const q = query(collection(db, 'history'), orderBy('lastBought', 'desc'), limit(50));
-      const snapshot = await getDocs(q);
-      
-      const rawData = snapshot.docs.map(d => d.data());
+      try {
+        const q = query(collection(db, 'history'), orderBy('lastBought', 'desc'), limit(50));
+        const snapshot = await getDocs(q);
+        
+        if (!isMounted) return;
 
-      // DÉDOUBLONNAGE INTELLIGENT
-      // On garde une seule entrée par nom d'article
-      const uniqueMap = new Map();
-      rawData.forEach(item => {
-        const key = item.name.toLowerCase();
-        if (!uniqueMap.has(key)) {
-          uniqueMap.set(key, item);
-        }
-      });
+        const rawData = snapshot.docs.map(d => d.data());
 
-      setHistoryItems(Array.from(uniqueMap.values()));
-      setLoading(false);
+        const uniqueMap = new Map();
+        rawData.forEach(item => {
+          const key = item.name.toLowerCase();
+          if (!uniqueMap.has(key)) {
+            uniqueMap.set(key, item);
+          }
+        });
+
+        setHistoryItems(Array.from(uniqueMap.values()));
+      } catch (error) {
+        console.error("Erreur chargement historique:", error);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
     };
 
     fetchHistory();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleQuickAdd = async (item) => {
-    await addItem({
-      name: item.name,
-      category: item.category,
-      qty: 1, // Par défaut 1 quand on réajoute depuis l'historique
-      unit: item.defaultUnit
-    });
-    // Petit feedback visuel ou juste laisser faire car c'est rapide
-    alert(`${item.name} ajouté !`); 
+    try {
+        await addItem({
+            name: item.name,
+            category: item.category,
+            qty: 1, 
+            unit: item.defaultUnit
+        });
+        // Feedback subtil (toast serait mieux, mais alert ok pour MVP)
+        // alert(`${item.name} ajouté !`); 
+    } catch (e) {
+        console.error("Erreur ajout rapide", e);
+    }
   };
 
   if (loading) return (
