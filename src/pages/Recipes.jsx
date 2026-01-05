@@ -35,10 +35,9 @@ export default function Recipes() {
 
   const handleAddAll = async (e, recipe) => {
     e.stopPropagation();
-    if(confirm(`Ajouter tout les ingrédients de "${recipe.title}" ?`)) {
-        for (const ingredient of recipe.ingredients) {
-            await addItem(ingredient);
-        }
+    // Suppression de la confirmation
+    for (const ingredient of recipe.ingredients) {
+        await addItem(ingredient);
     }
   };
 
