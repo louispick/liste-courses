@@ -5,14 +5,15 @@ import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 // Your web app's Firebase configuration
+// Keys are now loaded from Environment Variables for security
 const firebaseConfig = {
-  apiKey: "AIzaSyBu3kU2KFBQdLuff-BvIKX0KFwQ6hYPGq4",
-  authDomain: "liste-courses-73c14.firebaseapp.com",
-  projectId: "liste-courses-73c14",
-  storageBucket: "liste-courses-73c14.firebasestorage.app",
-  messagingSenderId: "15434063766",
-  appId: "1:15434063766:web:1eae676d1ba58ffe1487b7",
-  measurementId: "G-YMDTGLC1ZX"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
