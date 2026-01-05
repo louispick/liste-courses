@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { useShoppingList } from '../hooks/useShoppingList';
-import { Clock, Plus, Loader2 } from 'lucide-react';
+import { Clock, Plus, Loader2, Check } from 'lucide-react';
 
 export default function History() {
   const [historyItems, setHistoryItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const { addItem } = useShoppingList();
+  
+  // Track visual feedback per item
+  const [addedItems, setAddedItems] = useState({});
 
   useEffect(() => {
     let isMounted = true;
@@ -23,7 +26,8 @@ export default function History() {
 
         const uniqueMap = new Map();
         rawData.forEach(item => {
-          const key = item.name.toLowerCase();
+          // Normalisation très basique pour éviter "Tomates" et "tomates"
+          const key = item.name.toLowerCase().trim();
           if (!uniqueMap.has(key)) {
             uniqueMap.set(key, item);
           }
@@ -44,18 +48,26 @@ export default function History() {
     };
   }, []);
 
-  const handleQuickAdd = async (item) => {
+  const handleQuickAdd = async (item, index) => {
     try {
+        // Feedback immédiat
+        setAddedItems(prev => ({ ...prev, [index]: true }));
+
         await addItem({
             name: item.name,
             category: item.category,
             qty: 1, 
             unit: item.defaultUnit
         });
-        // Feedback subtil (toast serait mieux, mais alert ok pour MVP)
-        // alert(`${item.name} ajouté !`); 
+        
+        // Reset feedback après 1.5s
+        setTimeout(() => {
+            setAddedItems(prev => ({ ...prev, [index]: false }));
+        }, 1500);
+
     } catch (e) {
         console.error("Erreur ajout rapide", e);
+        setAddedItems(prev => ({ ...prev, [index]: false }));
     }
   };
 
@@ -82,26 +94,38 @@ export default function History() {
             <p className="text-sm mt-2">Les articles supprimés apparaîtront ici.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3">
-            {historyItems.map((item, idx) => (
-                <button
-                    key={idx}
-                    onClick={() => handleQuickAdd(item)}
-                    className="bg-white p-4 rounded-2xl soft-shadow text-left hover:bg-gray-50 transition-colors flex flex-col justify-between group h-24"
-                >
-                    <span className="font-semibold text-gray-800 line-clamp-2">
-                        {item.name}
-                    </span>
-                    <div className="flex justify-between items-end mt-2">
-                        <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-md">
-                            {item.category}
-                        </span>
-                        <div className="bg-sun-yellow text-deep-blue p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Plus className="w-4 h-4" />
+        <div className="space-y-3">
+            {historyItems.map((item, idx) => {
+                const isAdded = addedItems[idx];
+                
+                return (
+                    <button
+                        key={idx}
+                        onClick={() => handleQuickAdd(item, idx)}
+                        className="w-full bg-white p-4 rounded-2xl soft-shadow flex items-center justify-between hover:bg-gray-50 transition-all active:scale-[0.98]"
+                    >
+                        <div className="flex flex-col items-start text-left">
+                            <span className="font-bold text-gray-800 text-lg">
+                                {item.name}
+                            </span>
+                            <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md mt-1">
+                                {item.category}
+                            </span>
                         </div>
-                    </div>
-                </button>
-            ))}
+
+                        <div className={`
+                            w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300
+                            ${isAdded ? 'bg-green-500 text-white scale-110' : 'bg-sun-yellow text-deep-blue'}
+                        `}>
+                            {isAdded ? (
+                                <Check className="w-6 h-6" strokeWidth={3} />
+                            ) : (
+                                <Plus className="w-6 h-6" />
+                            )}
+                        </div>
+                    </button>
+                );
+            })}
         </div>
       )}
     </div>
