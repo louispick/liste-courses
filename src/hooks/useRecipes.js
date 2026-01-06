@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
-import { collection, query, orderBy, onSnapshot, addDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 
 export const useRecipes = () => {
   const [recipes, setRecipes] = useState([]);
@@ -23,9 +23,16 @@ export const useRecipes = () => {
     });
   };
 
+  const updateRecipe = async (id, title, ingredients) => {
+    await updateDoc(doc(db, 'recipes', id), {
+        title,
+        ingredients
+    });
+  };
+
   const deleteRecipe = async (id) => {
     await deleteDoc(doc(db, 'recipes', id));
   };
 
-  return { recipes, loading, addRecipe, deleteRecipe };
+  return { recipes, loading, addRecipe, updateRecipe, deleteRecipe };
 };

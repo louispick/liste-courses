@@ -21,7 +21,6 @@ export default function History() {
 
         const rawData = snapshot.docs.map(d => d.data());
 
-        // Dédoublonnage sur le nom
         const uniqueMap = new Map();
         rawData.forEach(item => {
           const key = item.name.toLowerCase();
@@ -59,12 +58,13 @@ export default function History() {
   };
 
   const handleDeleteFromHistory = async (itemName, e) => {
-    e.stopPropagation(); // Empêche d'ajouter l'item en cliquant sur la poubelle
+    e.stopPropagation(); 
     
-    if(!confirm(`Supprimer "${itemName}" de l'historique définitivement ?`)) return;
-
+    // Suppression immédiate sans confirmation (Fluidité demandée)
     try {
-        // On cherche toutes les occurrences de cet article dans l'historique pour bien nettoyer
+        // Mise à jour locale optimiste (pour que ce soit instantané visuellement)
+        setHistoryItems(prev => prev.filter(i => i.name !== itemName));
+
         const q = query(collection(db, 'history'), where('name', '==', itemName));
         const snapshot = await getDocs(q);
         
@@ -74,11 +74,9 @@ export default function History() {
         });
         await batch.commit();
 
-        // Mise à jour locale
-        setHistoryItems(prev => prev.filter(i => i.name !== itemName));
     } catch (error) {
         console.error("Erreur suppression historique:", error);
-        alert("Erreur lors de la suppression");
+        // Si erreur, on pourrait recharger la liste, mais c'est rare.
     }
   };
 
@@ -117,10 +115,9 @@ export default function History() {
                             {item.name}
                         </span>
                         
-                        {/* Bouton Supprimer */}
                         <button
                             onClick={(e) => handleDeleteFromHistory(item.name, e)}
-                            className="text-gray-300 hover:text-red-400 absolute top-2 right-2 p-2"
+                            className="text-gray-300 hover:text-red-400 absolute top-2 right-2 p-2 bg-white/50 rounded-full"
                         >
                             <Trash2 className="w-4 h-4" />
                         </button>

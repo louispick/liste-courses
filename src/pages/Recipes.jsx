@@ -2,19 +2,49 @@ import { useState } from 'react';
 import { useRecipes } from '../hooks/useRecipes';
 import { useShoppingList } from '../hooks/useShoppingList';
 import { parseInput } from '../lib/parser';
-import { Plus, Trash2, ChefHat, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { Plus, Trash2, ChefHat, ChevronDown, ChevronUp, Pencil, X } from 'lucide-react';
 import clsx from 'clsx';
 
 export default function Recipes() {
-  const { recipes, addRecipe, deleteRecipe } = useRecipes();
+  const { recipes, addRecipe, updateRecipe, deleteRecipe } = useRecipes();
   const { addItem } = useShoppingList();
   
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null); // ID de la recette en cours d'édition (null si création)
+  
   const [newTitle, setNewTitle] = useState('');
   const [newIngredients, setNewIngredients] = useState('');
   
-  // Track expanded recipe card
   const [expandedId, setExpandedId] = useState(null);
+
+  const resetForm = () => {
+      setNewTitle('');
+      setNewIngredients('');
+      setEditingId(null);
+      setShowForm(false);
+  };
+
+  const startEdit = (e, recipe) => {
+      e.stopPropagation();
+      setEditingId(recipe.id);
+      setNewTitle(recipe.title);
+      
+      // Reconversion des ingrédients en texte pour l'édition
+      const textIngredients = recipe.ingredients.map(i => {
+          let line = i.name;
+          // Formatage simple : "Qty Unit Name" ou "Name"
+          if (i.qty && i.qty !== 1) {
+              line = `${i.qty}${i.unit ? i.unit : ''} ${i.name}`; 
+          } else if (i.unit) {
+              line = `${i.qty}${i.unit} ${i.name}`;
+          }
+          return line;
+      }).join('\n');
+
+      setNewIngredients(textIngredients);
+      setShowForm(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,15 +57,17 @@ export default function Recipes() {
 
     if (ingredients.length === 0) return;
 
-    await addRecipe(newTitle, ingredients);
-    setNewTitle('');
-    setNewIngredients('');
-    setShowForm(false);
+    if (editingId) {
+        await updateRecipe(editingId, newTitle, ingredients);
+    } else {
+        await addRecipe(newTitle, ingredients);
+    }
+
+    resetForm();
   };
 
   const handleAddAll = async (e, recipe) => {
     e.stopPropagation();
-    // Suppression de la confirmation
     for (const ingredient of recipe.ingredients) {
         await addItem(ingredient);
     }
@@ -44,8 +76,6 @@ export default function Recipes() {
   const handleAddOne = async (e, ingredient) => {
     e.stopPropagation();
     await addItem(ingredient);
-    // Visual feedback usually needed, but generic alert is intrusive.
-    // Ideally use a toast, for now we assume it works.
   };
 
   return (
@@ -55,15 +85,19 @@ export default function Recipes() {
           Recettes
         </h1>
         <button 
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => { resetForm(); setShowForm(!showForm); }}
           className="bg-sun-yellow text-deep-blue p-2 rounded-xl shadow-md active:scale-95 transition-transform"
         >
-          <Plus />
+          {showForm ? <X /> : <Plus />}
         </button>
       </header>
 
       {showForm && (
         <form onSubmit={handleSubmit} className="bg-white p-6 rounded-3xl soft-shadow mb-6 animate-in slide-in-from-top-4">
+          <h2 className="text-lg font-bold text-deep-blue mb-4">
+              {editingId ? 'Modifier la recette' : 'Nouvelle recette'}
+          </h2>
+          
           <input
             type="text"
             placeholder="Titre (ex: Pâtes Carbo)"
@@ -77,9 +111,21 @@ export default function Recipes() {
             value={newIngredients}
             onChange={e => setNewIngredients(e.target.value)}
           />
-          <button type="submit" className="w-full bg-deep-blue text-white font-bold py-3 rounded-xl">
-            Sauvegarder
-          </button>
+          <div className="flex gap-2">
+            <button 
+                type="button" 
+                onClick={resetForm}
+                className="flex-1 bg-gray-100 text-gray-600 font-bold py-3 rounded-xl"
+            >
+                Annuler
+            </button>
+            <button 
+                type="submit" 
+                className="flex-1 bg-deep-blue text-white font-bold py-3 rounded-xl"
+            >
+                {editingId ? 'Mettre à jour' : 'Sauvegarder'}
+            </button>
+          </div>
         </form>
       )}
 
@@ -109,7 +155,15 @@ export default function Recipes() {
                         </div>
                         
                         <div className="flex items-center gap-2">
-                             {/* Delete Button (Small) */}
+                             {/* Edit Button */}
+                             <button 
+                                onClick={(e) => startEdit(e, recipe)} 
+                                className="p-2 text-gray-300 hover:text-deep-blue"
+                            >
+                                <Pencil className="w-4 h-4" />
+                            </button>
+
+                             {/* Delete Button */}
                              <button 
                                 onClick={(e) => { e.stopPropagation(); deleteRecipe(recipe.id); }} 
                                 className="p-2 text-gray-300 hover:text-red-400"

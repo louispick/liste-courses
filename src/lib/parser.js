@@ -1,6 +1,5 @@
 import { findCategory } from './categories';
 
-// Liste des unités reconnues pour aider le regex
 const UNITS = [
   'kg', 'g', 'mg', 
   'l', 'ml', 'cl', 
@@ -15,12 +14,7 @@ const UNITS = [
   'sac', 'sacs'
 ].join('|');
 
-// Pattern: "2kg Tomates"
-// ^(\d+)\s*(unit)?\s+(item)$
 const PREFIX_REGEX = new RegExp(`^(\\d+(?:[.,]\\d+)?)\\s*(${UNITS})?\\s+(.+)$`, 'i');
-
-// Pattern: "Tomates 2kg" ou "Crème 3 pots"
-// ^(item)\s+(\d+)\s*(unit)?$
 const SUFFIX_REGEX = new RegExp(`^(.+?)\\s+(\\d+(?:[.,]\\d+)?)\\s*(${UNITS})?$`, 'i');
 
 export const parseInput = (input) => {
@@ -48,8 +42,14 @@ export const parseInput = (input) => {
     }
   }
 
-  // Nettoyage du nom (Capitalisation)
+  // Nettoyage du nom
   name = name.trim();
+  
+  // Suppression des prépositions parasites (de, d', des) en début de nom
+  // ex: "300g de farine" -> "farine"
+  name = name.replace(/^(de\s+|d'|des\s+)/i, "");
+
+  // Capitalisation
   name = name.charAt(0).toUpperCase() + name.slice(1);
 
   const category = findCategory(name);
