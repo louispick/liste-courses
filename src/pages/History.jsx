@@ -1,33 +1,30 @@
 import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
-import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, where, writeBatch } from 'firebase/firestore';
 import { useShoppingList } from '../hooks/useShoppingList';
-import { Clock, Plus, Loader2, Check } from 'lucide-react';
+import { Clock, Plus, Loader2, Trash2 } from 'lucide-react';
 
 export default function History() {
   const [historyItems, setHistoryItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const { addItem } = useShoppingList();
-  
-  // Track visual feedback per item
-  const [addedItems, setAddedItems] = useState({});
 
   useEffect(() => {
     let isMounted = true;
 
     const fetchHistory = async () => {
       try {
-        const q = query(collection(db, 'history'), orderBy('lastBought', 'desc'), limit(50));
+        const q = query(collection(db, 'history'), orderBy('lastBought', 'desc'), limit(100));
         const snapshot = await getDocs(q);
         
         if (!isMounted) return;
 
         const rawData = snapshot.docs.map(d => d.data());
 
+        // Dédoublonnage sur le nom
         const uniqueMap = new Map();
         rawData.forEach(item => {
-          // Normalisation très basique pour éviter "Tomates" et "tomates"
-          const key = item.name.toLowerCase().trim();
+          const key = item.name.toLowerCase();
           if (!uniqueMap.has(key)) {
             uniqueMap.set(key, item);
           }
@@ -48,26 +45,40 @@ export default function History() {
     };
   }, []);
 
-  const handleQuickAdd = async (item, index) => {
+  const handleQuickAdd = async (item) => {
     try {
-        // Feedback immédiat
-        setAddedItems(prev => ({ ...prev, [index]: true }));
-
         await addItem({
             name: item.name,
             category: item.category,
             qty: 1, 
             unit: item.defaultUnit
         });
-        
-        // Reset feedback après 1.5s
-        setTimeout(() => {
-            setAddedItems(prev => ({ ...prev, [index]: false }));
-        }, 1500);
-
     } catch (e) {
         console.error("Erreur ajout rapide", e);
-        setAddedItems(prev => ({ ...prev, [index]: false }));
+    }
+  };
+
+  const handleDeleteFromHistory = async (itemName, e) => {
+    e.stopPropagation(); // Empêche d'ajouter l'item en cliquant sur la poubelle
+    
+    if(!confirm(`Supprimer "${itemName}" de l'historique définitivement ?`)) return;
+
+    try {
+        // On cherche toutes les occurrences de cet article dans l'historique pour bien nettoyer
+        const q = query(collection(db, 'history'), where('name', '==', itemName));
+        const snapshot = await getDocs(q);
+        
+        const batch = writeBatch(db);
+        snapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+
+        // Mise à jour locale
+        setHistoryItems(prev => prev.filter(i => i.name !== itemName));
+    } catch (error) {
+        console.error("Erreur suppression historique:", error);
+        alert("Erreur lors de la suppression");
     }
   };
 
@@ -89,43 +100,42 @@ export default function History() {
       </header>
 
       {historyItems.length === 0 ? (
-        <div className="text-center py-10 text-gray-400 bg-white rounded-3xl p-8">
-            <p>Ton historique est vide pour l'instant.</p>
-            <p className="text-sm mt-2">Les articles supprimés apparaîtront ici.</p>
+        <div className="text-center py-10 text-gray-400 bg-white rounded-3xl p-8 soft-shadow">
+            <p className="text-lg mb-2">Historique vide</p>
+            <p className="text-sm">Les articles que tu supprimes de ta liste de courses apparaîtront ici pour les retrouver plus vite.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-            {historyItems.map((item, idx) => {
-                const isAdded = addedItems[idx];
-                
-                return (
-                    <button
-                        key={idx}
-                        onClick={() => handleQuickAdd(item, idx)}
-                        className="w-full bg-white p-4 rounded-2xl soft-shadow flex items-center justify-between hover:bg-gray-50 transition-all active:scale-[0.98]"
-                    >
-                        <div className="flex flex-col items-start text-left">
-                            <span className="font-bold text-gray-800 text-lg">
-                                {item.name}
-                            </span>
-                            <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md mt-1">
-                                {item.category}
-                            </span>
-                        </div>
+        <div className="grid grid-cols-2 gap-3">
+            {historyItems.map((item, idx) => (
+                <div
+                    key={idx}
+                    onClick={() => handleQuickAdd(item)}
+                    className="bg-white p-4 rounded-2xl soft-shadow text-left hover:bg-gray-50 transition-colors flex flex-col justify-between group h-28 relative cursor-pointer"
+                >
+                    <div className="flex justify-between items-start">
+                        <span className="font-semibold text-gray-800 line-clamp-2 pr-6">
+                            {item.name}
+                        </span>
+                        
+                        {/* Bouton Supprimer */}
+                        <button
+                            onClick={(e) => handleDeleteFromHistory(item.name, e)}
+                            className="text-gray-300 hover:text-red-400 absolute top-2 right-2 p-2"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    </div>
 
-                        <div className={`
-                            w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300
-                            ${isAdded ? 'bg-green-500 text-white scale-110' : 'bg-sun-yellow text-deep-blue'}
-                        `}>
-                            {isAdded ? (
-                                <Check className="w-6 h-6" strokeWidth={3} />
-                            ) : (
-                                <Plus className="w-6 h-6" />
-                            )}
+                    <div className="flex justify-between items-end mt-2">
+                        <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-md max-w-[70%] truncate">
+                            {item.category}
+                        </span>
+                        <div className="bg-sun-yellow text-deep-blue p-1.5 rounded-full shadow-sm active:scale-90 transition-transform">
+                            <Plus className="w-4 h-4" />
                         </div>
-                    </button>
-                );
-            })}
+                    </div>
+                </div>
+            ))}
         </div>
       )}
     </div>
