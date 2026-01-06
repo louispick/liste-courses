@@ -155,6 +155,15 @@ export default function Recipes() {
                         </div>
                         
                         <div className="flex items-center gap-2">
+                             {/* Quick Add All Button */}
+                             <button 
+                                onClick={(e) => handleAddAll(e, recipe)} 
+                                className="p-2 text-deep-blue bg-sun-yellow/20 hover:bg-sun-yellow rounded-xl transition-colors mr-1"
+                                title="Tout ajouter"
+                            >
+                                <Plus className="w-5 h-5" />
+                            </button>
+
                              {/* Edit Button */}
                              <button 
                                 onClick={(e) => startEdit(e, recipe)} 
