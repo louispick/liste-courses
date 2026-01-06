@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
-import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, deleteDoc, writeBatch, serverTimestamp, limit } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, deleteDoc, writeBatch, serverTimestamp, limit, getDocs, where } from 'firebase/firestore';
 
 export const useShoppingList = () => {
   const [items, setItems] = useState([]);
@@ -31,14 +31,37 @@ export const useShoppingList = () => {
     return unsubscribe;
   }, []);
 
+  // INTELLIGENCE HISTORIQUE : Gestion de la fréquence
   const addToHistory = async (itemData) => {
     try {
-        await addDoc(collection(db, 'history'), {
-            name: itemData.name,
-            category: itemData.category,
-            defaultUnit: itemData.unit || '',
-            lastBought: serverTimestamp()
-        });
+        // 1. On normalise le nom pour la recherche (minuscule)
+        const normalizedName = itemData.name.toLowerCase().trim();
+
+        // 2. On cherche si cet item existe déjà dans l'historique
+        const q = query(collection(db, 'history'), where('nameLowerCase', '==', normalizedName));
+        const snapshot = await getDocs(q);
+
+        if (!snapshot.empty) {
+            // IL EXISTE : On incrémente la fréquence
+            const docRef = snapshot.docs[0].ref;
+            const currentFreq = snapshot.docs[0].data().frequency || 1;
+            
+            await updateDoc(docRef, {
+                frequency: currentFreq + 1,
+                lastBought: serverTimestamp(),
+                defaultUnit: itemData.unit || snapshot.docs[0].data().defaultUnit // On garde l'unité la plus récente si dispo
+            });
+        } else {
+            // NOUVEAU : On crée l'entrée avec fréquence 1
+            await addDoc(collection(db, 'history'), {
+                name: itemData.name,
+                nameLowerCase: normalizedName, // Champ utile pour la recherche insensible à la casse
+                category: itemData.category,
+                defaultUnit: itemData.unit || '',
+                frequency: 1,
+                lastBought: serverTimestamp()
+            });
+        }
     } catch (e) {
         console.error("History add failed", e);
     }
@@ -96,7 +119,12 @@ export const useShoppingList = () => {
     const batch = writeBatch(db);
     const checkedItems = items.filter(i => i.checked);
     
-    checkedItems.forEach(item => addToHistory(item));
+    // On traite l'historique un par un (nécessaire pour la vérification d'existence)
+    // On ne le fait pas dans le batch car lecture requise avant écriture
+    for (const item of checkedItems) {
+        await addToHistory(item);
+    }
+
     checkedItems.forEach(item => {
       batch.delete(doc(db, 'items', item.id));
     });
