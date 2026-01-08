@@ -8,6 +8,7 @@ export default function Layout() {
   const navItems = [
     { path: '/', icon: List, label: 'Liste' },
     { path: '/recipes', icon: ChefHat, label: 'Recettes' },
+    { path: '/quiz', icon: Heart, label: 'Jeu' },
     { path: '/history', icon: History, label: 'Historique' },
   ];
 
