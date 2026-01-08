@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuiz } from '../hooks/useQuiz';
 import { QUESTIONS } from '../lib/questions';
-import { Heart, Loader2, RefreshCw, HeartCrack, Sparkles, Hourglass, ArrowLeft, X, Check, Eye, Trophy, Lock, Calendar, ChevronRight, RotateCcw } from 'lucide-react';
+import { Heart, Loader2, RefreshCw, HeartCrack, Sparkles, Hourglass, ArrowLeft, X, Check, Eye, Trophy, Lock, Calendar, ChevronRight, RotateCcw, Brain, User } from 'lucide-react';
 import clsx from 'clsx';
 
 const BATCH_SIZE = 20;
@@ -18,7 +18,7 @@ export default function Quiz() {
   const [showCelebration, setShowCelebration] = useState(false);
   const [showFailure, setShowFailure] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const [historyTab, setHistoryTab] = useState('answers'); // 'answers' | 'sessions'
+  const [historyTab, setHistoryTab] = useState('answers');
   const [viewingSession, setViewingSession] = useState(null);
 
   // Identification
@@ -40,10 +40,8 @@ export default function Quiz() {
   const activeSessionStart = (currentSession - 1) * BATCH_SIZE;
   const activeSessionEnd = currentSession * BATCH_SIZE;
 
-  // Helper historique
   const getSessionHistory = () => {
       if (!gameState?.sessionHistory) return [];
-      // Supporte les deux formats pour la transition
       if (Array.isArray(gameState.sessionHistory)) return gameState.sessionHistory;
       return Object.values(gameState.sessionHistory);
   };
@@ -185,40 +183,105 @@ export default function Quiz() {
       questionsToShow = QUESTIONS.slice(start, end);
   }
 
+  // --- NOUVEAU COMPOSANT D'AFFICHAGE "INTUITIF" ---
+  const ComparisonRow = ({ subjectName, realChoice, predictorName, prediction, isSuccess }) => (
+      <div className={clsx(
+          "flex items-center justify-between p-2 rounded-lg text-xs mb-1",
+          isSuccess ? "bg-green-100 text-green-800" : "bg-red-50 text-red-800"
+      )}>
+          <div className="flex items-center gap-2 flex-1">
+              <User className="w-3 h-3 opacity-50" />
+              <span className="font-bold">{subjectName}</span>
+              <span className="bg-white/80 px-2 py-0.5 rounded shadow-sm font-medium">{realChoice || "?"}</span>
+          </div>
+          
+          <div className="mx-2 opacity-30">
+            {isSuccess ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+          </div>
+
+          <div className="flex items-center gap-2 justify-end flex-1">
+              <span className="bg-white/50 px-2 py-0.5 rounded border border-black/5 italic">{prediction || "?"}</span>
+              <span className="font-medium text-right">{predictorName}</span>
+              <Brain className="w-3 h-3 opacity-50" />
+          </div>
+      </div>
+  );
+
   const QuestionsList = ({ questions, sessionOffset }) => (
-      <div className="space-y-4">
+      <div className="space-y-6 pb-8">
           {questions.map((q, idx) => {
               const answers = gameState.answers[q.id];
               if (!answers) return null;
+              
               const userKey = user.email.replace(/\./g, '_');
               const myAns = answers[userKey];
               const otherKey = Object.keys(answers).find(k => k !== userKey);
               const partnerAns = otherKey ? answers[otherKey] : null;
-              let status = 'waiting';
+              
+              const waitingPartner = !partnerAns;
+              
+              // Calcul des matchs individuels
+              const meAboutPartnerMatch = myAns && partnerAns && myAns.partner === partnerAns.self;
+              const partnerAboutMeMatch = myAns && partnerAns && partnerAns.partner === myAns.self;
+              
+              // Statut global
+              let globalStatus = 'waiting';
               if (myAns && partnerAns) {
-                  const match1 = myAns.partner === partnerAns.self;
-                  const match2 = partnerAns.partner === myAns.self;
-                  status = (match1 && match2) ? 'success' : 'fail';
-              } else if (myAns) status = 'waiting_partner';
-              else status = 'waiting_me';
+                  globalStatus = (meAboutPartnerMatch && partnerAboutMeMatch) ? 'success' : 'fail';
+              }
 
               return (
-                  <div key={q.id} className={clsx("border-2 rounded-xl p-3 text-sm", status === 'success' ? "border-green-200 bg-green-50" : status === 'fail' ? "border-red-200 bg-red-50" : "border-gray-100 bg-gray-50")}>
-                      <div className="flex justify-between items-start mb-2">
-                          <span className="font-bold text-gray-700">Q{(sessionOffset || activeSessionStart) + idx + 1}. {q.text}</span>
-                          {status === 'success' && <Heart className="w-4 h-4 text-green-500 fill-green-500" />}
-                          {status === 'fail' && <HeartCrack className="w-4 h-4 text-red-400" />}
-                          {status.includes('waiting') && <Hourglass className="w-4 h-4 text-gray-400" />}
+                  <div key={q.id} className="relative">
+                      {/* Ligne de liaison visuelle */}
+                      {idx < questions.length - 1 && <div className="absolute left-4 top-8 bottom-[-24px] w-0.5 bg-gray-100 -z-10"></div>}
+                      
+                      <div className="flex items-center gap-2 mb-2">
+                          <div className={clsx(
+                              "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 shrink-0 z-10",
+                              globalStatus === 'success' ? "bg-green-500 border-green-500 text-white" :
+                              globalStatus === 'fail' ? "bg-white border-red-200 text-red-300" : "bg-gray-100 border-gray-200 text-gray-400"
+                          )}>
+                              Q{(sessionOffset || activeSessionStart) + idx + 1}
+                          </div>
+                          <h3 className="font-bold text-deep-blue text-sm flex-1 leading-tight">{q.text}</h3>
+                          
+                          {/* Indicateur de statut iconique */}
+                          {globalStatus === 'success' && <Heart className="w-5 h-5 text-red-500 fill-red-500 animate-pulse" />}
+                          {globalStatus === 'fail' && <HeartCrack className="w-5 h-5 text-gray-300" />}
+                          {globalStatus === 'waiting' && <Hourglass className="w-4 h-4 text-orange-300" />}
                       </div>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="bg-white/60 p-2 rounded-lg">
-                              <p className="font-bold text-deep-blue mb-1">{myName}</p>
-                              {myAns ? <><p>Choix: <strong>{myAns.self}</strong></p><p className="text-gray-500">Pense: {myAns.partner}</p></> : <span className="italic text-gray-400">...</span>}
-                          </div>
-                          <div className="bg-white/60 p-2 rounded-lg">
-                              <p className="font-bold text-deep-blue mb-1">{partnerName}</p>
-                              {partnerAns ? (status === 'waiting_me' ? <span className="italic text-gray-400">Caché</span> : <><p>Choix: <strong>{partnerAns.self}</strong></p><p className="text-gray-500">Pense: {partnerAns.partner}</p></>) : <span className="italic text-gray-400">...</span>}
-                          </div>
+
+                      <div className="pl-10 space-y-1">
+                          {/* LIGNE 1 : À PROPOS DE MOI (Louis) */}
+                          {myAns ? (
+                              waitingPartner ? (
+                                  <div className="p-2 bg-gray-50 rounded-lg text-xs text-gray-400 italic flex justify-between">
+                                      <span>J'ai choisi <strong>{myAns.self}</strong>...</span>
+                                      <span>En attente de {partnerName}...</span>
+                                  </div>
+                              ) : (
+                                  <ComparisonRow 
+                                      subjectName={myName} 
+                                      realChoice={myAns.self} 
+                                      predictorName={partnerName} 
+                                      prediction={partnerAns?.partner}
+                                      isSuccess={partnerAboutMeMatch}
+                                  />
+                              )
+                          ) : <div className="text-xs text-gray-300 italic">Pas encore répondu</div>}
+
+                          {/* LIGNE 2 : À PROPOS D'ELLE (Mathilde) */}
+                          {partnerAns ? (
+                              waitingPartner ? null : ( // Si j'ai pas la réponse de l'autre, je ne peux rien afficher de sûr
+                                  <ComparisonRow 
+                                      subjectName={partnerName} 
+                                      realChoice={partnerAns.self} 
+                                      predictorName={myName} 
+                                      prediction={myAns?.partner}
+                                      isSuccess={meAboutPartnerMatch}
+                                  />
+                              )
+                          ) : null}
                       </div>
                   </div>
               );
