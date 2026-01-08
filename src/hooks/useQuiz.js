@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
-import { doc, onSnapshot, setDoc, updateDoc, arrayUnion, increment } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, updateDoc, deleteField, writeBatch } from 'firebase/firestore';
 import { useAuth } from './useAuth';
+import { QUESTIONS } from '../lib/questions';
+
+const BATCH_SIZE = 20;
 
 export const useQuiz = () => {
   const { user } = useAuth();
@@ -15,15 +18,27 @@ export const useQuiz = () => {
 
     const gameRef = doc(db, 'games', GAME_ID);
     
-    const unsubscribe = onSnapshot(gameRef, (docSnap) => {
+    const unsubscribe = onSnapshot(gameRef, async (docSnap) => {
       if (docSnap.exists()) {
-        setGameState(docSnap.data());
+        const data = docSnap.data();
+        
+        // MIGRATION DE SURETÉ : Si sessionHistory est un Array (vieux format), on le convertit en Object
+        if (Array.isArray(data.sessionHistory)) {
+            const newHistory = {};
+            data.sessionHistory.forEach(s => {
+                if(s && s.id) newHistory[`s${s.id}`] = s;
+            });
+            await updateDoc(gameRef, { sessionHistory: newHistory });
+            return; // Le snapshot va se re-déclencher
+        }
+
+        setGameState(data);
       } else {
         setDoc(gameRef, {
           answers: {}, 
           lastSeen: {},
           currentSession: 1,
-          sessionHistory: {} // Changement: Object/Map au lieu d'Array pour éviter les doublons
+          sessionHistory: {} 
         });
       }
       setLoading(false);
@@ -59,26 +74,43 @@ export const useQuiz = () => {
   const completeSession = async (sessionData) => {
       const gameRef = doc(db, 'games', GAME_ID);
       
-      // Utilisation d'une clé map pour éviter les doublons (idempotence)
-      // Si Mathilde et Louis envoient la même chose, ça écrase au lieu d'ajouter
+      // On sauvegarde la session ET on incrémente currentSession
+      // Utilisation de la syntaxe Map pour ne pas perdre l'historique existant
       await updateDoc(gameRef, {
           [`sessionHistory.s${sessionData.id}`]: sessionData,
-          currentSession: sessionData.id + 1 // On force la valeur suivante explicitement
+          currentSession: sessionData.id + 1
       });
   };
 
-  const resetGame = async () => {
-      if(!confirm("⚠️ Attention : Cela va effacer TOUS les scores et recommencer le jeu à zéro pour vous deux. Continuer ?")) return;
-      
+  // Réinitialiser UNIQUEMENT la session ciblée (pour "Rejouer" ou "Reset Current")
+  const resetSessionData = async (sessionIdToReset) => {
+      if (!gameState) return;
       const gameRef = doc(db, 'games', GAME_ID);
-      await setDoc(gameRef, {
-          answers: {},
-          lastSeen: {},
-          currentSession: 1,
-          sessionHistory: {}
-      });
+      
+      const start = (sessionIdToReset - 1) * BATCH_SIZE;
+      const end = sessionIdToReset * BATCH_SIZE;
+      
+      // 1. On supprime les réponses de cette plage
+      const updates = {};
+      for (let i = start; i < end; i++) {
+          if (i >= QUESTIONS.length) break;
+          const qId = QUESTIONS[i].id;
+          // Note: deleteField() sur une map nested marche avec dot notation
+          updates[`answers.${qId}`] = deleteField();
+      }
+
+      // 2. On définit cette session comme la courante
+      updates['currentSession'] = sessionIdToReset;
+
+      // 3. (Optionnel) On supprime l'entrée historique si on la rejoue ? 
+      // Non, on garde l'ancien score jusqu'à ce qu'il soit écrasé par le nouveau 'completeSession'
+      // C'est plus sympa de voir "Ah j'avais fait 15/20 avant".
+
+      await updateDoc(gameRef, updates);
+      
+      // Petit reload pour nettoyer les états locaux si besoin
       window.location.reload();
   };
 
-  return { gameState, loading, submitAnswer, updateLastSeen, completeSession, resetGame, user };
+  return { gameState, loading, submitAnswer, updateLastSeen, completeSession, resetSessionData, user };
 };
