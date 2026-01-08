@@ -1,4 +1,4 @@
-const BASE_QUESTIONS = [
+export const QUESTIONS = [
   // --- CLASSIQUES & BASIQUES ---
   { id: 1, text: "Pizza ou Burger ?", a: "Pizza", b: "Burger" },
   { id: 2, text: "Mer ou Montagne ?", a: "Mer", b: "Montagne" },
@@ -113,37 +113,60 @@ const BASE_QUESTIONS = [
   { id: 97, text: "Message toute la journée ou Appel le soir ?", a: "Message", b: "Appel" },
   { id: 98, text: "Jalousie ou Confiance aveugle ?", a: "Jaloux", b: "Confiance" },
   { id: 99, text: "Week-end surprise ou Week-end prévu ?", a: "Surprise", b: "Prévu" },
-  { id: 100, text: "Partager le dessert ou Pas toucher ?", a: "Partager", b: "Pas toucher" }
+  { id: 100, text: "Partager le dessert ou Pas toucher ?", a: "Partager", b: "Pas toucher" },
+
+  // --- NOUVELLES QUESTIONS MANUELLES (QUALITÉ GARANTIE) ---
+  { id: 101, text: "Conducteur ou Passager ?", a: "Conducteur", b: "Passager" },
+  { id: 102, text: "Argent : Écureuil ou Panier percé ?", a: "Écureuil", b: "Panier percé" },
+  { id: 103, text: "Bricolage : Expert ou Catastrophe ?", a: "Expert", b: "Catastrophe" },
+  { id: 104, text: "Voiture : Sportive ou Familiale ?", a: "Sportive", b: "Familiale" },
+  { id: 105, text: "Vacances : Plage ou Visites culturelles ?", a: "Plage", b: "Visites" },
+  { id: 106, text: "Météo : Canicule ou Grand froid ?", a: "Canicule", b: "Froid" },
+  { id: 107, text: "Cadeau : Fait main ou Acheté ?", a: "Fait main", b: "Acheté" },
+  { id: 108, text: "Soirée : Bar ou Maison ?", a: "Bar", b: "Maison" },
+  { id: 109, text: "Musique : Écouteurs ou Enceinte ?", a: "Écouteurs", b: "Enceinte" },
+  { id: 110, text: "Photo : Selfie ou Paysage ?", a: "Selfie", b: "Paysage" },
+  { id: 111, text: "Vêtements : Marque ou Vintage ?", a: "Marque", b: "Vintage" },
+  { id: 112, text: "Sport : Collectif ou Individuel ?", a: "Collectif", b: "Individuel" },
+  { id: 113, text: "Télé : Documentaire ou Téléréalité ?", a: "Docu", b: "Téléréalité" },
+  { id: 114, text: "Réseaux : Facebook ou TikTok ?", a: "Facebook", b: "TikTok" },
+  { id: 115, text: "Appel : Facetime ou Audio ?", a: "Visio", b: "Audio" },
+  { id: 116, text: "Message : Texte ou Vocal ?", a: "Texte", b: "Vocal" },
+  { id: 117, text: "Travail : Passion ou Alimentaire ?", a: "Passion", b: "Alimentaire" },
+  { id: 118, text: "Horaires : Fixes ou Flexibles ?", a: "Fixes", b: "Flexibles" },
+  { id: 119, text: "Télétravail ou Bureau ?", a: "Maison", b: "Bureau" },
+  { id: 120, text: "Chef ou Employé ?", a: "Chef", b: "Employé" },
+  
+  { id: 121, text: "Logement : Neuf ou Ancien ?", a: "Neuf", b: "Ancien" },
+  { id: 122, text: "Déco : Minimaliste ou Chargée ?", a: "Minimaliste", b: "Chargée" },
+  { id: 123, text: "Couleur mur : Blanc ou Coloré ?", a: "Blanc", b: "Coloré" },
+  { id: 124, text: "Sol : Parquet ou Carrelage ?", a: "Parquet", b: "Carrelage" },
+  { id: 125, text: "Lumière : Tamisée ou Vive ?", a: "Tamisée", b: "Vive" },
+  { id: 126, text: "Plantes : Vraies ou Fausses ?", a: "Vraies", b: "Fausses" },
+  { id: 127, text: "Meubles : Ikea ou Designer ?", a: "Ikea", b: "Designer" },
+  { id: 128, text: "Lit : Une couette ou Deux couettes ?", a: "Une", b: "Deux" },
+  { id: 129, text: "Cuisine : Ouverte ou Fermée ?", a: "Ouverte", b: "Fermée" },
+  { id: 130, text: "SDB : Baignoire ou Douche italienne ?", a: "Baignoire", b: "Italienne" },
+
+  { id: 131, text: "Super-pouvoir : Voler ou Téléportation ?", a: "Voler", b: "TP" },
+  { id: 132, text: "Zombie Apocalypse : Leader ou Premier mort ?", a: "Leader", b: "Mort" },
+  { id: 133, text: "Ile déserte : Couteau ou Briquet ?", a: "Couteau", b: "Briquet" },
+  { id: 134, text: "Loto : Tout flamber ou Investir ?", a: "Flamber", b: "Investir" },
+  { id: 135, text: "Réincarnation : Aigle ou Dauphin ?", a: "Aigle", b: "Dauphin" },
+  { id: 136, text: "Voyage temps : 1900 ou 3000 ?", a: "1900", b: "3000" },
+  { id: 137, text: "Aliens : Ils existent ou Pas ?", a: "Oui", b: "Non" },
+  { id: 138, text: "Fantômes : J'y crois ou Conneries ?", a: "J'y crois", b: "Conneries" },
+  { id: 139, text: "Destin ou Hasard ?", a: "Destin", b: "Hasard" },
+  { id: 140, text: "Karma : Vrai ou Faux ?", a: "Vrai", b: "Faux" },
+
+  { id: 141, text: "Enfant : Fille ou Garçon ?", a: "Fille", b: "Garçon" },
+  { id: 142, text: "Prénom : Classique ou Original ?", a: "Classique", b: "Original" },
+  { id: 143, text: "Éducation : Stricte ou Cool ?", a: "Stricte", b: "Cool" },
+  { id: 144, text: "École : Privée ou Publique ?", a: "Privée", b: "Publique" },
+  { id: 145, text: "Noël : En famille ou Voyage ?", a: "Famille", b: "Voyage" },
+  { id: 146, text: "Dimanche : Repas famille ou Netflix ?", a: "Famille", b: "Netflix" },
+  { id: 147, text: "Vieux jours : Maison retraite ou Chez soi ?", a: "Retraite", b: "Chez soi" },
+  { id: 148, text: "Enterrement : Triste ou Fête ?", a: "Triste", b: "Fête" },
+  { id: 149, text: "Secret : Je garde ou Je balance ?", a: "Garde", b: "Balance" },
+  { id: 150, text: "Mensonge : Jamais ou Parfois utile ?", a: "Jamais", b: "Utile" }
 ];
-
-const EXTENDED_QUESTIONS = [...BASE_QUESTIONS];
-
-// Génération procédurale pour atteindre 1000 questions
-const THEMES = ["Manger", "Boire", "Visiter", "Acheter", "Regarder", "Écouter", "Pratiquer", "Offrir", "Conduire", "Porter"];
-const OPTIONS_A = ["seul", "avec des amis", "le matin", "dehors", "vite", "au calme", "en musique", "le lundi", "sous la pluie", "en rouge"];
-const OPTIONS_B = ["en couple", "en famille", "le soir", "dedans", "lentement", "dans le bruit", "en silence", "le vendredi", "au soleil", "en bleu"];
-
-// Seed simple pour que la génération soit constante entre les rechargements (pseudo-aléatoire déterministe)
-let seed = 12345;
-const random = () => {
-    const x = Math.sin(seed++) * 10000;
-    return x - Math.floor(x);
-};
-
-for(let i = 101; i <= 1000; i++) {
-    const theme = THEMES[Math.floor(random() * THEMES.length)];
-    const optA = OPTIONS_A[Math.floor(random() * OPTIONS_A.length)];
-    let optB = OPTIONS_B[Math.floor(random() * OPTIONS_B.length)];
-    
-    // Évite les doublons exacts A/B (même si les listes sont différentes, on sait jamais)
-    if(optA === optB) optB = OPTIONS_B[(Math.floor(random() * OPTIONS_B.length) + 1) % OPTIONS_B.length];
-
-    EXTENDED_QUESTIONS.push({
-        id: i,
-        text: `${theme} : ${optA} ou ${optB} ?`,
-        a: optA,
-        b: optB
-    });
-}
-
-export const QUESTIONS = EXTENDED_QUESTIONS;
