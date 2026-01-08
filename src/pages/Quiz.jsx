@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuiz } from '../hooks/useQuiz';
 import { QUESTIONS } from '../lib/questions';
-import { Heart, Loader2, RefreshCw, HeartCrack, Sparkles, Hourglass, ArrowLeft } from 'lucide-react';
+import { Heart, Loader2, RefreshCw, HeartCrack, Sparkles, Hourglass, ArrowLeft, X, Check, Eye } from 'lucide-react';
 import clsx from 'clsx';
 
 export default function Quiz() {
@@ -13,13 +13,14 @@ export default function Quiz() {
   const [myChoice, setMyChoice] = useState(null);
   const [newHearts, setNewHearts] = useState(0); 
   const [showNewHearts, setShowNewHearts] = useState(false);
-  const [showCelebration, setShowCelebration] = useState(false); // Célébration temps réel
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [showHistory, setShowHistory] = useState(false); // Nouvel état pour l'historique
 
   // Identification
   const myName = user?.email.includes('louis') ? 'Louis' : (user?.email.includes('mathilde') ? 'Mathilde' : 'Toi');
   const partnerName = myName === 'Louis' ? 'Mathilde' : (myName === 'Mathilde' ? 'Louis' : 'Partenaire');
 
-  // Refs pour comparaison (détection changement score)
+  // Refs
   const prevHeartsRef = useRef(0);
   const isFirstLoadRef = useRef(true);
 
@@ -68,7 +69,7 @@ export default function Quiz() {
           partnerProgress = Object.values(gameState.answers).filter(a => a[otherKey]).length;
       }
 
-      // 3. Détection "Pendant ton absence" (Au chargement seulement)
+      // 3. Détection "Pendant ton absence"
       if (isFirstLoadRef.current) {
           const lastSeenIndex = gameState.lastSeen?.[userKey] || 0;
           if (myProgress > lastSeenIndex) {
@@ -94,9 +95,8 @@ export default function Quiz() {
       }
   }
 
-  // --- EFFET CÉLÉBRATION (Temps Réel) ---
+  // --- EFFETS ---
   useEffect(() => {
-      // Si le score augmente et que ce n'est pas le premier chargement
       if (!isFirstLoadRef.current && totalHearts > prevHeartsRef.current) {
           setShowCelebration(true);
           const timer = setTimeout(() => setShowCelebration(false), 2500);
@@ -105,15 +105,11 @@ export default function Quiz() {
       prevHeartsRef.current = totalHearts;
   }, [totalHearts]);
 
-  // --- NAVIGATION AUTO (Mise à jour index) ---
   useEffect(() => {
       if (!gameState) return;
-      // On ne met à jour l'index automatiquement QUE si on avance (pour éviter de gêner le bouton retour)
-      // Ou si c'est l'init
       if (myProgress > currentQIndex || (currentQIndex === 0 && myProgress > 0)) {
           setCurrentQIndex(myProgress);
       }
-
       if (!showNewHearts && myProgress > (gameState.lastSeen?.[user.email.replace(/\./g, '_')] || 0)) {
            updateLastSeen(myProgress);
       }
@@ -134,11 +130,9 @@ export default function Quiz() {
 
   const handleBack = () => {
       if (step === 'partner') {
-          // Annuler l'étape 2, revenir à l'étape 1
           setStep('self');
           setMyChoice(null);
       } else if (currentQIndex > 0) {
-          // Revenir à la question précédente
           setCurrentQIndex(prev => prev - 1);
           setStep('self');
           setMyChoice(null);
@@ -157,6 +151,87 @@ export default function Quiz() {
   return (
     <div className="pt-4 pb-24 px-4 max-w-sm mx-auto h-[80vh] flex flex-col relative">
       
+      {/* HISTORIQUE MODAL */}
+      {showHistory && (
+          <div className="absolute inset-0 z-50 bg-white rounded-3xl soft-shadow flex flex-col animate-in slide-in-from-bottom-10 duration-300">
+              <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+                  <h2 className="font-bold text-deep-blue text-lg">Vos Réponses</h2>
+                  <button onClick={() => setShowHistory(false)} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200">
+                      <X className="w-5 h-5 text-gray-500" />
+                  </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  {QUESTIONS.slice(0, Math.max(myProgress, partnerProgress)).map((q, idx) => {
+                      const answers = gameState.answers[q.id];
+                      if (!answers) return null;
+
+                      const userKey = user.email.replace(/\./g, '_');
+                      const myAns = answers[userKey];
+                      // Trouver l'autre clé
+                      const otherKey = Object.keys(answers).find(k => k !== userKey);
+                      const partnerAns = otherKey ? answers[otherKey] : null;
+
+                      // Statut
+                      let status = 'waiting';
+                      if (myAns && partnerAns) {
+                          const match1 = myAns.partner === partnerAns.self;
+                          const match2 = partnerAns.partner === myAns.self;
+                          status = (match1 && match2) ? 'success' : 'fail';
+                      } else if (myAns) {
+                          status = 'waiting_partner';
+                      } else {
+                          status = 'waiting_me';
+                      }
+
+                      return (
+                          <div key={q.id} className={clsx(
+                              "border-2 rounded-xl p-3 text-sm",
+                              status === 'success' ? "border-green-200 bg-green-50" : 
+                              status === 'fail' ? "border-red-200 bg-red-50" : "border-gray-100 bg-gray-50"
+                          )}>
+                              <div className="flex justify-between items-start mb-2">
+                                  <span className="font-bold text-gray-700">Q{idx+1}. {q.text}</span>
+                                  {status === 'success' && <Heart className="w-4 h-4 text-green-500 fill-green-500" />}
+                                  {status === 'fail' && <HeartCrack className="w-4 h-4 text-red-400" />}
+                                  {status.includes('waiting') && <Hourglass className="w-4 h-4 text-gray-400" />}
+                              </div>
+                              
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                  <div className="bg-white/60 p-2 rounded-lg">
+                                      <p className="font-bold text-deep-blue mb-1">{myName}</p>
+                                      {myAns ? (
+                                          <>
+                                            <p>Choix : <strong>{myAns.self}</strong></p>
+                                            <p className="text-gray-500">Pense que {partnerName} : {myAns.partner}</p>
+                                          </>
+                                      ) : <span className="italic text-gray-400">En attente...</span>}
+                                  </div>
+                                  <div className="bg-white/60 p-2 rounded-lg">
+                                      <p className="font-bold text-deep-blue mb-1">{partnerName}</p>
+                                      {partnerAns ? (
+                                          status === 'waiting_me' ? (
+                                              <span className="italic text-gray-400">A répondu (Caché)</span>
+                                          ) : (
+                                              <>
+                                                <p>Choix : <strong>{partnerAns.self}</strong></p>
+                                                <p className="text-gray-500">Pense que {myName} : {partnerAns.partner}</p>
+                                              </>
+                                          )
+                                      ) : <span className="italic text-gray-400">En attente...</span>}
+                                  </div>
+                              </div>
+                          </div>
+                      );
+                  })}
+                  {Math.max(myProgress, partnerProgress) === 0 && (
+                      <div className="text-center text-gray-400 py-10">
+                          Aucune réponse pour l'instant. Jouez !
+                      </div>
+                  )}
+              </div>
+          </div>
+      )}
+
       {/* CÉLÉBRATION TEMPS RÉEL */}
       {showCelebration && (
           <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
@@ -186,13 +261,17 @@ export default function Quiz() {
           </div>
       )}
 
-      {/* HEADER SCORE */}
-      <div className="flex justify-between items-center mb-6 bg-white p-3 rounded-2xl soft-shadow relative">
-          {/* Bouton Retour */}
+      {/* HEADER SCORE (CLIQUABLE) */}
+      <div 
+        onClick={() => setShowHistory(true)}
+        className="flex justify-between items-center mb-6 bg-white p-3 rounded-2xl soft-shadow relative cursor-pointer active:scale-[0.98] transition-transform hover:bg-gray-50"
+        title="Voir l'historique des réponses"
+      >
+          {/* Bouton Retour (exclu du clic historique) */}
           {(currentQIndex > 0 || step === 'partner') && (
               <button 
-                onClick={handleBack}
-                className="absolute left-[-16px] bg-white p-2 rounded-full shadow-md text-gray-400 hover:text-deep-blue"
+                onClick={(e) => { e.stopPropagation(); handleBack(); }}
+                className="absolute left-[-16px] bg-white p-2 rounded-full shadow-md text-gray-400 hover:text-deep-blue z-10"
               >
                   <ArrowLeft className="w-5 h-5" />
               </button>
@@ -208,8 +287,12 @@ export default function Quiz() {
                 <span className="font-bold text-xl text-gray-500">{totalErrors}</span>
             </div>
           </div>
-          <div className="text-xs font-medium px-3 py-1 bg-gray-100 rounded-full text-gray-500">
-              Q{currentQIndex + 1}
+          <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-400 mr-1 font-medium">Historique</span>
+              <Eye className="w-4 h-4 text-gray-300" />
+              <div className="text-xs font-medium px-3 py-1 bg-gray-100 rounded-full text-gray-500 ml-2">
+                  Q{currentQIndex + 1}
+              </div>
           </div>
       </div>
 
