@@ -59,7 +59,9 @@ export default function Quiz() {
               if (users.length === 2) {
                   const u1 = Object.values(qAnswers)[0];
                   const u2 = Object.values(qAnswers)[1];
-                  if (u1.partner === u2.self && u2.partner === u1.self) totalHearts++;
+                  const match1 = u1.partner === u2.self;
+                  const match2 = u2.partner === u1.self;
+                  if (match1 && match2) totalHearts++;
                   else totalErrors++;
               }
           }
@@ -183,26 +185,23 @@ export default function Quiz() {
       questionsToShow = QUESTIONS.slice(start, end);
   }
 
-  // --- NOUVEAU COMPOSANT D'AFFICHAGE "INTUITIF" ---
-  const ComparisonRow = ({ subjectName, realChoice, predictorName, prediction, isSuccess }) => (
+  // --- NOUVEAU DESIGN CLAIR (CARD BASED) ---
+  const ResultCard = ({ label, choice, guess, guesserName, isCorrect }) => (
       <div className={clsx(
-          "flex items-center justify-between p-2 rounded-lg text-xs mb-1",
-          isSuccess ? "bg-green-100 text-green-800" : "bg-red-50 text-red-800"
+          "flex justify-between items-center p-2 rounded-lg text-xs mb-1",
+          isCorrect ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800"
       )}>
-          <div className="flex items-center gap-2 flex-1">
-              <User className="w-3 h-3 opacity-50" />
-              <span className="font-bold">{subjectName}</span>
-              <span className="bg-white/80 px-2 py-0.5 rounded shadow-sm font-medium">{realChoice || "?"}</span>
+          <div className="flex flex-col">
+              <span className="font-bold mb-0.5">{label}</span>
+              <span className="text-gray-600">Choix : <strong className="text-deep-blue">{choice || "?"}</strong></span>
           </div>
           
-          <div className="mx-2 opacity-30">
-            {isSuccess ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-          </div>
-
-          <div className="flex items-center gap-2 justify-end flex-1">
-              <span className="bg-white/50 px-2 py-0.5 rounded border border-black/5 italic">{prediction || "?"}</span>
-              <span className="font-medium text-right">{predictorName}</span>
-              <Brain className="w-3 h-3 opacity-50" />
+          <div className="flex flex-col items-end">
+              <div className="flex items-center gap-1 mb-0.5">
+                  <span className="text-[10px] uppercase tracking-wide opacity-60">Vu par {guesserName}</span>
+                  {isCorrect ? <Check className="w-3 h-3 text-green-600" /> : <X className="w-3 h-3 text-red-500" />}
+              </div>
+              <span className="font-medium bg-white/50 px-2 rounded">{guess || "?"}</span>
           </div>
       </div>
   );
@@ -231,54 +230,46 @@ export default function Quiz() {
               }
 
               return (
-                  <div key={q.id} className="relative">
-                      {/* Ligne de liaison visuelle */}
-                      {idx < questions.length - 1 && <div className="absolute left-4 top-8 bottom-[-24px] w-0.5 bg-gray-100 -z-10"></div>}
-                      
-                      <div className="flex items-center gap-2 mb-2">
+                  <div key={q.id} className="relative bg-white border border-gray-100 rounded-2xl p-3 shadow-sm">
+                      <div className="flex items-center gap-2 mb-3 border-b border-gray-50 pb-2">
                           <div className={clsx(
-                              "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 shrink-0 z-10",
-                              globalStatus === 'success' ? "bg-green-500 border-green-500 text-white" :
-                              globalStatus === 'fail' ? "bg-white border-red-200 text-red-300" : "bg-gray-100 border-gray-200 text-gray-400"
+                              "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+                              globalStatus === 'success' ? "bg-green-500 text-white" :
+                              globalStatus === 'fail' ? "bg-red-400 text-white" : "bg-gray-200 text-gray-500"
                           )}>
-                              Q{(sessionOffset || activeSessionStart) + idx + 1}
+                              {(sessionOffset || activeSessionStart) + idx + 1}
                           </div>
                           <h3 className="font-bold text-deep-blue text-sm flex-1 leading-tight">{q.text}</h3>
                           
-                          {/* Indicateur de statut iconique */}
-                          {globalStatus === 'success' && <Heart className="w-5 h-5 text-red-500 fill-red-500 animate-pulse" />}
+                          {globalStatus === 'success' && <Heart className="w-5 h-5 text-red-500 fill-red-500" />}
                           {globalStatus === 'fail' && <HeartCrack className="w-5 h-5 text-gray-300" />}
-                          {globalStatus === 'waiting' && <Hourglass className="w-4 h-4 text-orange-300" />}
                       </div>
 
-                      <div className="pl-10 space-y-1">
-                          {/* LIGNE 1 : À PROPOS DE MOI (Louis) */}
+                      <div className="space-y-2">
+                          {/* BLOC MOI (LOUIS) */}
                           {myAns ? (
                               waitingPartner ? (
-                                  <div className="p-2 bg-gray-50 rounded-lg text-xs text-gray-400 italic flex justify-between">
-                                      <span>J'ai choisi <strong>{myAns.self}</strong>...</span>
-                                      <span>En attente de {partnerName}...</span>
-                                  </div>
+                                  <div className="text-xs text-gray-400 italic text-center py-2 bg-gray-50 rounded">En attente de {partnerName}...</div>
                               ) : (
-                                  <ComparisonRow 
-                                      subjectName={myName} 
-                                      realChoice={myAns.self} 
-                                      predictorName={partnerName} 
-                                      prediction={partnerAns?.partner}
-                                      isSuccess={partnerAboutMeMatch}
+                                  <ResultCard 
+                                      label={`À propos de ${myName}`}
+                                      choice={myAns.self}
+                                      guesserName={partnerName}
+                                      guess={partnerAns?.partner}
+                                      isCorrect={partnerAboutMeMatch}
                                   />
                               )
                           ) : <div className="text-xs text-gray-300 italic">Pas encore répondu</div>}
 
-                          {/* LIGNE 2 : À PROPOS D'ELLE (Mathilde) */}
+                          {/* BLOC PARTENAIRE (MATHILDE) */}
                           {partnerAns ? (
-                              waitingPartner ? null : ( // Si j'ai pas la réponse de l'autre, je ne peux rien afficher de sûr
-                                  <ComparisonRow 
-                                      subjectName={partnerName} 
-                                      realChoice={partnerAns.self} 
-                                      predictorName={myName} 
-                                      prediction={myAns?.partner}
-                                      isSuccess={meAboutPartnerMatch}
+                              waitingPartner ? null : (
+                                  <ResultCard 
+                                      label={`À propos de ${partnerName}`}
+                                      choice={partnerAns.self}
+                                      guesserName={myName}
+                                      guess={myAns?.partner}
+                                      isCorrect={meAboutPartnerMatch}
                                   />
                               )
                           ) : null}
@@ -293,10 +284,12 @@ export default function Quiz() {
   return (
     <div className="pt-4 pb-24 px-4 max-w-sm mx-auto h-[80vh] flex flex-col relative">
       
+      {/* MODALES ET EFFETS (Inchangés) */}
       {showCelebration && (<div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none"><div className="animate-float-up"><Heart className="w-32 h-32 text-red-500 fill-red-500 drop-shadow-2xl" /><div className="text-center mt-2 font-black text-white text-xl bg-red-500 px-4 py-1 rounded-full shadow-lg">MATCH !</div></div></div>)}
       {showFailure && (<div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none"><div className="animate-float-up"><HeartCrack className="w-32 h-32 text-gray-400 drop-shadow-2xl" /><div className="text-center mt-2 font-black text-white text-xl bg-gray-400 px-4 py-1 rounded-full shadow-lg">OUPS...</div></div></div>)}
       {showNewHearts && (<div className="absolute inset-0 z-50 flex items-center justify-center bg-white/90 backdrop-blur-sm animate-in fade-in duration-500"><div className="bg-white rounded-3xl p-8 soft-shadow text-center border-4 border-sun-yellow transform animate-in zoom-in duration-300"><Sparkles className="w-12 h-12 text-sun-yellow mx-auto mb-4 animate-pulse" /><h3 className="text-2xl font-bold text-deep-blue mb-2">Pendant ton absence...</h3><div className="text-6xl font-black text-red-500 mb-2 drop-shadow-sm">+{newHearts}</div><p className="text-xl font-bold text-red-400 mb-8">Nouveaux Cœurs !</p><button onClick={closeNewHearts} className="w-full bg-deep-blue text-white font-bold py-3 rounded-xl">Continuer</button></div></div>)}
 
+      {/* HISTORIQUE MODAL (AVEC NAVIGATION DEEP DIVE) */}
       {showHistory && (
           <div className="absolute inset-0 z-50 bg-white rounded-3xl soft-shadow flex flex-col animate-in slide-in-from-bottom-10 duration-300">
               <div className="p-4 border-b border-gray-100 flex justify-between items-center">
@@ -314,27 +307,43 @@ export default function Quiz() {
                   </div>
               )}
 
-              <div className="flex-1 overflow-y-auto p-4">
+              <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+                  {/* VUE 1 : LISTE DES SESSIONS (ARCHIVES) */}
                   {historyTab === 'sessions' && !viewingSession && (
                       <div className="space-y-3">
                           {getSessionHistory().length === 0 && <div className="text-center text-gray-400 py-10">Pas encore de session terminée.</div>}
                           {getSessionHistory().sort((a,b) => b.id - a.id).map((session, idx) => (
-                              <div key={idx} onClick={() => setViewingSession(session)} className="bg-white border-2 border-gray-100 rounded-2xl p-4 flex justify-between items-center cursor-pointer hover:border-sun-yellow transition-colors group">
+                              <div 
+                                key={idx} 
+                                onClick={() => setViewingSession(session)}
+                                className="bg-white border-2 border-gray-100 rounded-2xl p-4 flex justify-between items-center cursor-pointer hover:border-sun-yellow transition-colors group"
+                              >
                                   <div><h3 className="font-bold text-deep-blue">Session {session.id}</h3><p className="text-xs text-gray-400">{new Date(session.date).toLocaleDateString()}</p></div>
-                                  <div className="flex items-center gap-2">
-                                      <div className="flex items-center gap-1 bg-red-50 px-2 py-1 rounded-md"><Heart className="w-4 h-4 text-red-500 fill-red-500" /><span className="font-bold text-sm">{session.hearts}</span></div>
-                                      <button onClick={(e) => handleReplaySession(e, session.id)} className="p-2 text-gray-300 hover:text-deep-blue hover:bg-gray-100 rounded-full ml-2" title="Rejouer cette session"><RotateCcw className="w-4 h-4" /></button>
-                                      <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-deep-blue" />
+                                  <div className="flex items-center gap-4">
+                                      <div className="flex flex-col items-center"><Heart className="w-5 h-5 text-red-500 fill-red-500" /><span className="font-bold">{session.hearts}</span></div>
+                                      <div className="flex flex-col items-center opacity-50"><HeartCrack className="w-5 h-5 text-gray-400" /><span className="font-bold">{session.errors}</span></div>
+                                      <div className="flex items-center gap-2 border-l pl-4 border-gray-100">
+                                          <button onClick={(e) => handleReplaySession(e, session.id)} className="p-2 text-gray-300 hover:text-deep-blue hover:bg-gray-50 rounded-full" title="Rejouer cette session"><RotateCcw className="w-4 h-4" /></button>
+                                          <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-deep-blue" />
+                                      </div>
                                   </div>
                               </div>
                           ))}
                       </div>
                   )}
-                  {(historyTab === 'answers' || viewingSession) && <QuestionsList questions={questionsToShow} sessionOffset={viewingSession ? (viewingSession.id - 1) * BATCH_SIZE : activeSessionStart} />}
+
+                  {/* VUE 2 : DÉTAIL D'UNE SESSION (ARCHIVÉE OU COURANTE) */}
+                  {(historyTab === 'answers' || viewingSession) && (
+                      <QuestionsList 
+                        questions={questionsToShow} 
+                        sessionOffset={viewingSession ? (viewingSession.id - 1) * BATCH_SIZE : activeSessionStart} 
+                      />
+                  )}
               </div>
           </div>
       )}
 
+      {/* HEADER SCORE (CLIQUABLE) */}
       <div onClick={() => { setShowHistory(true); setHistoryTab('answers'); }} className="flex justify-between items-center mb-6 bg-white p-3 rounded-2xl soft-shadow relative cursor-pointer active:scale-[0.98] transition-transform hover:bg-gray-50">
           {(currentQIndex > activeSessionStart || step === 'partner') && !isSessionFinishedMe && (
               <button onClick={(e) => { e.stopPropagation(); handleBack(); }} className="absolute left-[-16px] bg-white p-2 rounded-full shadow-md text-gray-400 hover:text-deep-blue z-10"><ArrowLeft className="w-5 h-5" /></button>
@@ -352,6 +361,7 @@ export default function Quiz() {
           </div>
       </div>
 
+      {/* ZONE JEU (CARTE) */}
       <div className="flex-1 flex flex-col justify-center">
           {isSessionFinishedMe && isSessionFinishedPartner ? (
               <div className="bg-white rounded-3xl p-8 soft-shadow text-center animate-in zoom-in duration-300">
@@ -408,6 +418,7 @@ export default function Quiz() {
           )}
       </div>
       
+      {/* Footer Reset */}
       <div className="mt-8 text-center">
           <button onClick={handleResetCurrentSession} className="text-[10px] text-gray-300 hover:text-red-400 flex items-center justify-center gap-1 mx-auto"><RefreshCw className="w-3 h-3" /> Recommencer la session</button>
       </div>
