@@ -251,26 +251,26 @@ export default function Quiz() {
                               waitingPartner ? (
                                   <div className="text-xs text-gray-400 italic text-center py-2 bg-gray-50 rounded">En attente de {partnerName}...</div>
                               ) : (
-                                  <ResultCard 
-                                      label={`À propos de ${myName}`}
-                                      choice={myAns.self}
-                                      guesserName={partnerName}
-                                      guess={partnerAns?.partner}
-                                      isCorrect={partnerAboutMeMatch}
-                                  />
+                                  <div className={clsx("p-2 rounded-lg text-xs mb-1", partnerAboutMeMatch ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800")}>
+                                      <p className="mb-1"><strong>{myName}</strong> préfère <strong>{myAns.self}</strong> pour {myName === 'Louis' ? 'lui' : 'elle'},</p>
+                                      <p className="flex items-center gap-1">
+                                          et a choisi <strong>{myAns.partner}</strong> pour {myName === 'Louis' ? 'elle' : 'lui'}
+                                          {partnerAboutMeMatch ? <Check className="w-3 h-3 text-green-600" /> : <X className="w-3 h-3 text-red-500" />}
+                                      </p>
+                                  </div>
                               )
                           ) : <div className="text-xs text-gray-300 italic">Pas encore répondu</div>}
 
                           {/* BLOC PARTENAIRE (MATHILDE) */}
                           {partnerAns ? (
                               waitingPartner ? null : (
-                                  <ResultCard 
-                                      label={`À propos de ${partnerName}`}
-                                      choice={partnerAns.self}
-                                      guesserName={myName}
-                                      guess={myAns?.partner}
-                                      isCorrect={meAboutPartnerMatch}
-                                  />
+                                  <div className={clsx("p-2 rounded-lg text-xs mb-1", meAboutPartnerMatch ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800")}>
+                                      <p className="mb-1"><strong>{partnerName}</strong> préfère <strong>{partnerAns.self}</strong> pour {partnerName === 'Louis' ? 'lui' : 'elle'},</p>
+                                      <p className="flex items-center gap-1">
+                                          et a choisi <strong>{partnerAns.partner}</strong> pour {partnerName === 'Louis' ? 'elle' : 'lui'}
+                                          {meAboutPartnerMatch ? <Check className="w-3 h-3 text-green-600" /> : <X className="w-3 h-3 text-red-500" />}
+                                      </p>
+                                  </div>
                               )
                           ) : null}
                       </div>
