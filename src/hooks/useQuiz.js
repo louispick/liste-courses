@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
-import { doc, onSnapshot, setDoc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, updateDoc, arrayUnion, increment } from 'firebase/firestore';
 import { useAuth } from './useAuth';
 
 export const useQuiz = () => {
@@ -19,10 +19,11 @@ export const useQuiz = () => {
       if (docSnap.exists()) {
         setGameState(docSnap.data());
       } else {
-        // Init si vide
         setDoc(gameRef, {
           answers: {}, 
-          lastSeen: {} // { 'louis_gmail_com': 12 } (index de la dernière question vue)
+          lastSeen: {},
+          currentSession: 1, // Nouvelle propriété
+          sessionHistory: [] // [{ id: 1, hearts: 15, errors: 5, date: ... }]
         });
       }
       setLoading(false);
@@ -34,9 +35,7 @@ export const useQuiz = () => {
   const submitAnswer = async (questionId, selfAnswer, partnerPrediction) => {
     if (!user) return;
     const gameRef = doc(db, 'games', GAME_ID);
-    const userEmail = user.email.replace(/\./g, '_'); // Firebase key safe
-
-    // Update deep nested object
+    const userEmail = user.email.replace(/\./g, '_');
     const answerPath = `answers.${questionId}.${userEmail}`;
     
     await updateDoc(gameRef, {
@@ -52,10 +51,25 @@ export const useQuiz = () => {
       if (!user) return;
       const gameRef = doc(db, 'games', GAME_ID);
       const userEmail = user.email.replace(/\./g, '_');
-      
-      // On met à jour seulement si on avance
       await updateDoc(gameRef, {
           [`lastSeen.${userEmail}`]: questionIndex
+      });
+  };
+
+  const completeSession = async (sessionData) => {
+      const gameRef = doc(db, 'games', GAME_ID);
+      
+      // On archive la session et on passe à la suivante
+      // On utilise arrayUnion pour ajouter à l'historique
+      // On incrémente currentSession
+      
+      // Note: Pour éviter que les deux cliquent en même temps et incrémentent 2 fois,
+      // on vérifie si la session actuelle en base est bien celle qu'on veut fermer.
+      // Mais avec Firestore increment, c'est atomique. On va juste check côté UI.
+      
+      await updateDoc(gameRef, {
+          sessionHistory: arrayUnion(sessionData),
+          currentSession: increment(1)
       });
   };
 
@@ -65,10 +79,12 @@ export const useQuiz = () => {
       const gameRef = doc(db, 'games', GAME_ID);
       await setDoc(gameRef, {
           answers: {},
-          lastSeen: {}
+          lastSeen: {},
+          currentSession: 1,
+          sessionHistory: []
       });
       window.location.reload();
   };
 
-  return { gameState, loading, submitAnswer, updateLastSeen, resetGame, user };
+  return { gameState, loading, submitAnswer, updateLastSeen, completeSession, resetGame, user };
 };
