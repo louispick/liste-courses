@@ -249,56 +249,36 @@ export default function Quiz() {
                           {globalStatus === 'fail' && <HeartCrack className="w-5 h-5 text-gray-400" />}
                       </div>
 
-                      <div className="grid grid-cols-2 gap-0 border-t border-gray-100 divide-x divide-gray-100">
-                          {/* COLONNE MOI (LOUIS) */}
-                          <div className="p-3 bg-white">
-                              <p className="font-black text-deep-blue mb-2 text-center uppercase tracking-wider text-[10px]">{myName}</p>
-                              {myAns ? (
-                                  <div className="space-y-2">
-                                      <div className="text-center">
-                                          <p className="text-[10px] text-gray-400 font-bold mb-0.5">SON CHOIX</p>
-                                          <div className="inline-block bg-deep-blue/5 text-deep-blue px-2 py-1 rounded font-bold border border-deep-blue/10">
-                                              {myAns.self}
-                                          </div>
-                                      </div>
-                                      <div className="text-center opacity-70">
-                                          <p className="text-[10px] text-gray-400 mb-0.5">SA PRÉDICTION</p>
-                                          <div className="text-deep-blue font-medium italic">
-                                              "{myAns.partner}"
-                                          </div>
-                                      </div>
+                      <div className="space-y-2">
+                          {/* BLOC MOI (LOUIS) */}
+                          {myAns ? (
+                              waitingPartner ? (
+                                  <div className="text-xs text-gray-400 italic text-center py-2 bg-gray-50 rounded">En attente de {partnerName}...</div>
+                              ) : (
+                                  <div className={clsx("p-2 rounded-lg text-xs mb-1", partnerAboutMeMatch ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800")}>
+                                      <p className="mb-1"><strong>{myName}</strong> préfère <strong>{myAns.self}</strong> pour {myName === 'Louis' ? 'lui' : 'elle'},</p>
+                                      <p className="flex items-center gap-1">
+                                          et a choisi <strong>{myAns.partner}</strong> pour {myName === 'Louis' ? 'elle' : 'lui'}
+                                          {partnerAboutMeMatch ? <Check className="w-3 h-3 text-green-600" /> : <X className="w-3 h-3 text-red-500" />}
+                                      </p>
                                   </div>
-                              ) : (
-                                  <div className="h-full flex items-center justify-center text-xs text-gray-300 italic">En attente...</div>
-                              )}
-                          </div>
+                              )
+                          ) : <div className="text-xs text-deep-blue font-bold text-center py-2 bg-sun-yellow/10 rounded">À toi de jouer !</div>}
 
-                          {/* COLONNE PARTENAIRE (MATHILDE) */}
-                          <div className="p-3 bg-white">
-                              <p className="font-black text-deep-blue mb-2 text-center uppercase tracking-wider text-[10px]">{partnerName}</p>
-                              {partnerAns ? (
-                                  waitingPartner ? ( // Sécurité d'affichage si on n'a pas la donnée
-                                      <div className="h-full flex items-center justify-center text-xs text-gray-300 italic">Caché</div>
-                                  ) : (
-                                      <div className="space-y-2">
-                                          <div className="text-center">
-                                              <p className="text-[10px] text-gray-400 font-bold mb-0.5">SON CHOIX</p>
-                                              <div className="inline-block bg-deep-blue/5 text-deep-blue px-2 py-1 rounded font-bold border border-deep-blue/10">
-                                                  {partnerAns.self}
-                                              </div>
-                                          </div>
-                                          <div className="text-center opacity-70">
-                                              <p className="text-[10px] text-gray-400 mb-0.5">SA PRÉDICTION</p>
-                                              <div className="text-deep-blue font-medium italic">
-                                                  "{partnerAns.partner}"
-                                              </div>
-                                          </div>
-                                      </div>
-                                  )
+                          {/* BLOC PARTENAIRE (MATHILDE) */}
+                          {partnerAns ? (
+                              !myAns ? ( // SÉCURITÉ : Si je n'ai pas répondu, je ne vois PAS ses réponses
+                                  <div className="text-xs text-gray-400 italic text-center py-2 bg-gray-50 rounded">Masqué 🤫</div>
                               ) : (
-                                  <div className="h-full flex items-center justify-center text-xs text-gray-300 italic">En attente...</div>
-                              )}
-                          </div>
+                                  <div className={clsx("p-2 rounded-lg text-xs mb-1", meAboutPartnerMatch ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800")}>
+                                      <p className="mb-1"><strong>{partnerName}</strong> préfère <strong>{partnerAns.self}</strong> pour {partnerName === 'Louis' ? 'lui' : 'elle'},</p>
+                                      <p className="flex items-center gap-1">
+                                          et a choisi <strong>{partnerAns.partner}</strong> pour {partnerName === 'Louis' ? 'elle' : 'lui'}
+                                          {meAboutPartnerMatch ? <Check className="w-3 h-3 text-green-600" /> : <X className="w-3 h-3 text-red-500" />}
+                                      </p>
+                                  </div>
+                              )
+                          ) : <div className="text-xs text-gray-300 italic text-center py-2">Pas encore répondu</div>}
                       </div>
                   </div>
               );
