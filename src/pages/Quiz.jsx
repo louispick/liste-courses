@@ -230,49 +230,75 @@ export default function Quiz() {
               }
 
               return (
-                  <div key={q.id} className="relative bg-white border border-gray-100 rounded-2xl p-3 shadow-sm">
-                      <div className="flex items-center gap-2 mb-3 border-b border-gray-50 pb-2">
+                  <div key={q.id} className="relative bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+                      <div className={clsx(
+                          "flex items-center gap-2 px-3 py-2 border-b",
+                          globalStatus === 'success' ? "bg-green-50 border-green-100" :
+                          globalStatus === 'fail' ? "bg-red-50 border-red-100" : "bg-gray-50 border-gray-100"
+                      )}>
                           <div className={clsx(
-                              "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
-                              globalStatus === 'success' ? "bg-green-500 text-white" :
-                              globalStatus === 'fail' ? "bg-red-400 text-white" : "bg-gray-200 text-gray-500"
+                              "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 bg-white border",
+                              globalStatus === 'success' ? "border-green-200 text-green-600" :
+                              globalStatus === 'fail' ? "border-red-200 text-red-400" : "border-gray-200 text-gray-400"
                           )}>
                               {(sessionOffset || activeSessionStart) + idx + 1}
                           </div>
                           <h3 className="font-bold text-deep-blue text-sm flex-1 leading-tight">{q.text}</h3>
                           
                           {globalStatus === 'success' && <Heart className="w-5 h-5 text-red-500 fill-red-500" />}
-                          {globalStatus === 'fail' && <HeartCrack className="w-5 h-5 text-gray-300" />}
+                          {globalStatus === 'fail' && <HeartCrack className="w-5 h-5 text-gray-400" />}
                       </div>
 
-                      <div className="space-y-2">
-                          {/* BLOC MOI (LOUIS) */}
-                          {myAns ? (
-                              waitingPartner ? (
-                                  <div className="text-xs text-gray-400 italic text-center py-2 bg-gray-50 rounded">En attente de {partnerName}...</div>
+                      <div className="grid grid-cols-2 gap-0 border-t border-gray-100 divide-x divide-gray-100">
+                          {/* COLONNE MOI (LOUIS) */}
+                          <div className="p-3 bg-white">
+                              <p className="font-black text-deep-blue mb-2 text-center uppercase tracking-wider text-[10px]">{myName}</p>
+                              {myAns ? (
+                                  <div className="space-y-2">
+                                      <div className="text-center">
+                                          <p className="text-[10px] text-gray-400 font-bold mb-0.5">SON CHOIX</p>
+                                          <div className="inline-block bg-deep-blue/5 text-deep-blue px-2 py-1 rounded font-bold border border-deep-blue/10">
+                                              {myAns.self}
+                                          </div>
+                                      </div>
+                                      <div className="text-center opacity-70">
+                                          <p className="text-[10px] text-gray-400 mb-0.5">SA PRÉDICTION</p>
+                                          <div className="text-deep-blue font-medium italic">
+                                              "{myAns.partner}"
+                                          </div>
+                                      </div>
+                                  </div>
                               ) : (
-                                  <div className={clsx("p-2 rounded-lg text-xs mb-1", partnerAboutMeMatch ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800")}>
-                                      <p className="mb-1"><strong>{myName}</strong> préfère <strong>{myAns.self}</strong> pour {myName === 'Louis' ? 'lui' : 'elle'},</p>
-                                      <p className="flex items-center gap-1">
-                                          et a choisi <strong>{myAns.partner}</strong> pour {myName === 'Louis' ? 'elle' : 'lui'}
-                                          {partnerAboutMeMatch ? <Check className="w-3 h-3 text-green-600" /> : <X className="w-3 h-3 text-red-500" />}
-                                      </p>
-                                  </div>
-                              )
-                          ) : <div className="text-xs text-gray-300 italic">Pas encore répondu</div>}
+                                  <div className="h-full flex items-center justify-center text-xs text-gray-300 italic">En attente...</div>
+                              )}
+                          </div>
 
-                          {/* BLOC PARTENAIRE (MATHILDE) */}
-                          {partnerAns ? (
-                              waitingPartner ? null : (
-                                  <div className={clsx("p-2 rounded-lg text-xs mb-1", meAboutPartnerMatch ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800")}>
-                                      <p className="mb-1"><strong>{partnerName}</strong> préfère <strong>{partnerAns.self}</strong> pour {partnerName === 'Louis' ? 'lui' : 'elle'},</p>
-                                      <p className="flex items-center gap-1">
-                                          et a choisi <strong>{partnerAns.partner}</strong> pour {partnerName === 'Louis' ? 'elle' : 'lui'}
-                                          {meAboutPartnerMatch ? <Check className="w-3 h-3 text-green-600" /> : <X className="w-3 h-3 text-red-500" />}
-                                      </p>
-                                  </div>
-                              )
-                          ) : null}
+                          {/* COLONNE PARTENAIRE (MATHILDE) */}
+                          <div className="p-3 bg-white">
+                              <p className="font-black text-deep-blue mb-2 text-center uppercase tracking-wider text-[10px]">{partnerName}</p>
+                              {partnerAns ? (
+                                  waitingPartner ? ( // Sécurité d'affichage si on n'a pas la donnée
+                                      <div className="h-full flex items-center justify-center text-xs text-gray-300 italic">Caché</div>
+                                  ) : (
+                                      <div className="space-y-2">
+                                          <div className="text-center">
+                                              <p className="text-[10px] text-gray-400 font-bold mb-0.5">SON CHOIX</p>
+                                              <div className="inline-block bg-deep-blue/5 text-deep-blue px-2 py-1 rounded font-bold border border-deep-blue/10">
+                                                  {partnerAns.self}
+                                              </div>
+                                          </div>
+                                          <div className="text-center opacity-70">
+                                              <p className="text-[10px] text-gray-400 mb-0.5">SA PRÉDICTION</p>
+                                              <div className="text-deep-blue font-medium italic">
+                                                  "{partnerAns.partner}"
+                                              </div>
+                                          </div>
+                                      </div>
+                                  )
+                              ) : (
+                                  <div className="h-full flex items-center justify-center text-xs text-gray-300 italic">En attente...</div>
+                              )}
+                          </div>
                       </div>
                   </div>
               );
