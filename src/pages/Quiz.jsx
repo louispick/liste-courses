@@ -115,6 +115,12 @@ export default function Quiz() {
       }
   }, [gameState, myProgress, showNewHearts]);
 
+  // FONCTION MANQUANTE RESTAURÉE
+  const handleSelfChoice = (choice) => {
+      setMyChoice(choice);
+      setStep('partner');
+  };
+
   const handlePartnerChoice = async (choice) => {
       setStep('sending');
       await submitAnswer(QUESTIONS[currentQIndex].id, myChoice, choice);
