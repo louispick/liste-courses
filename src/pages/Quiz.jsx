@@ -14,7 +14,8 @@ export default function Quiz() {
   const [newHearts, setNewHearts] = useState(0); 
   const [showNewHearts, setShowNewHearts] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
-  const [showHistory, setShowHistory] = useState(false); // Nouvel état pour l'historique
+  const [showFailure, setShowFailure] = useState(false); // Nouvel état pour l'échec
+  const [showHistory, setShowHistory] = useState(false);
 
   // Identification
   const myName = user?.email.includes('louis') ? 'Louis' : (user?.email.includes('mathilde') ? 'Mathilde' : 'Toi');
@@ -22,6 +23,7 @@ export default function Quiz() {
 
   // Refs
   const prevHeartsRef = useRef(0);
+  const prevErrorsRef = useRef(0); // Ref pour les erreurs
   const isFirstLoadRef = useRef(true);
 
   // --- CALCUL DU SCORE & PROGRESSION ---
@@ -91,20 +93,37 @@ export default function Quiz() {
                   setShowNewHearts(true);
               }
           }
+          // On initialise les refs avec les valeurs actuelles pour ne pas déclencher les anims au chargement
+          prevHeartsRef.current = totalHearts;
+          prevErrorsRef.current = totalErrors;
           isFirstLoadRef.current = false;
       }
   }
 
-  // --- EFFETS ---
+  // --- EFFETS ANIMATIONS ---
   useEffect(() => {
-      if (!isFirstLoadRef.current && totalHearts > prevHeartsRef.current) {
+      // Pour éviter le double trigger au mount en mode strict dev, on checke isFirstLoadRef qui est set plus haut
+      // Mais ici on utilise les valeurs calculées dynamiquement.
+      
+      // Succès
+      if (totalHearts > prevHeartsRef.current) {
           setShowCelebration(true);
           const timer = setTimeout(() => setShowCelebration(false), 2500);
-          return () => clearTimeout(timer);
+          // On ne clean pas le timer précédent pour permettre l'overlap si ça s'enchaine vite, 
+          // mais dans React c'est mieux de clean. Ici simple timeout.
       }
       prevHeartsRef.current = totalHearts;
-  }, [totalHearts]);
 
+      // Échec
+      if (totalErrors > prevErrorsRef.current) {
+          setShowFailure(true);
+          const timer = setTimeout(() => setShowFailure(false), 2500);
+      }
+      prevErrorsRef.current = totalErrors;
+
+  }, [totalHearts, totalErrors]);
+
+  // --- NAVIGATION AUTO ---
   useEffect(() => {
       if (!gameState) return;
       if (myProgress > currentQIndex || (currentQIndex === 0 && myProgress > 0)) {
@@ -167,11 +186,9 @@ export default function Quiz() {
 
                       const userKey = user.email.replace(/\./g, '_');
                       const myAns = answers[userKey];
-                      // Trouver l'autre clé
                       const otherKey = Object.keys(answers).find(k => k !== userKey);
                       const partnerAns = otherKey ? answers[otherKey] : null;
 
-                      // Statut
                       let status = 'waiting';
                       if (myAns && partnerAns) {
                           const match1 = myAns.partner === partnerAns.self;
@@ -232,13 +249,25 @@ export default function Quiz() {
           </div>
       )}
 
-      {/* CÉLÉBRATION TEMPS RÉEL */}
+      {/* CÉLÉBRATION (SUCCESS) */}
       {showCelebration && (
           <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
               <div className="animate-float-up">
                   <Heart className="w-32 h-32 text-red-500 fill-red-500 drop-shadow-2xl" />
                   <div className="text-center mt-2 font-black text-white text-xl bg-red-500 px-4 py-1 rounded-full shadow-lg">
                       MATCH !
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* CÉLÉBRATION (FAILURE) */}
+      {showFailure && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
+              <div className="animate-float-up">
+                  <HeartCrack className="w-32 h-32 text-gray-400 drop-shadow-2xl" />
+                  <div className="text-center mt-2 font-black text-white text-xl bg-gray-400 px-4 py-1 rounded-full shadow-lg">
+                      OUPS...
                   </div>
               </div>
           </div>
