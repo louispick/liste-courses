@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
-import { doc, onSnapshot, setDoc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { useAuth } from './useAuth';
 
 export const useQuiz = () => {
@@ -8,8 +8,6 @@ export const useQuiz = () => {
   const [gameState, setGameState] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ID unique pour le jeu de couple (on pourrait utiliser un ID combiné des userIds, 
-  // mais pour simplifier on utilise un ID fixe "couple_game_1" car il n'y a qu'un couple)
   const GAME_ID = "couple_game_1";
 
   useEffect(() => {
@@ -21,11 +19,10 @@ export const useQuiz = () => {
       if (docSnap.exists()) {
         setGameState(docSnap.data());
       } else {
-        // Initialiser le jeu si inexistant
+        // Init si vide
         setDoc(gameRef, {
-          scores: { total: 0 },
-          answers: {}, // Structure: { questionId: { userEmail: { self: 'A', partner: 'B' } } }
-          progress: {} // Structure: { userEmail: lastQuestionIndex }
+          answers: {}, 
+          lastSeen: {} // { 'louis_gmail_com': 12 } (index de la dernière question vue)
         });
       }
       setLoading(false);
@@ -35,13 +32,12 @@ export const useQuiz = () => {
   }, [user]);
 
   const submitAnswer = async (questionId, selfAnswer, partnerPrediction) => {
-    if (!user || !gameState) return;
-
+    if (!user) return;
     const gameRef = doc(db, 'games', GAME_ID);
-    const userEmail = user.email;
+    const userEmail = user.email.replace(/\./g, '_'); // Firebase key safe
 
-    // 1. Enregistrer la réponse
-    const answerPath = `answers.${questionId}.${userEmail.replace(/\./g, '_')}`; // Firebase n'aime pas les points dans les clés
+    // Update deep nested object
+    const answerPath = `answers.${questionId}.${userEmail}`;
     
     await updateDoc(gameRef, {
       [answerPath]: {
@@ -50,12 +46,29 @@ export const useQuiz = () => {
         timestamp: Date.now()
       }
     });
-
-    // 2. Vérifier si l'autre a déjà répondu pour calculer les points
-    // On doit le faire côté serveur idéalement, mais ici on le fait en optimiste ou à la lecture
-    // Pour simplifier, on stocke juste les réponses brutes.
-    // Le calcul des points se fera à l'affichage (computed).
   };
 
-  return { gameState, loading, submitAnswer, user };
+  const updateLastSeen = async (questionIndex) => {
+      if (!user) return;
+      const gameRef = doc(db, 'games', GAME_ID);
+      const userEmail = user.email.replace(/\./g, '_');
+      
+      // On met à jour seulement si on avance
+      await updateDoc(gameRef, {
+          [`lastSeen.${userEmail}`]: questionIndex
+      });
+  };
+
+  const resetGame = async () => {
+      if(!confirm("⚠️ Attention : Cela va effacer TOUS les scores et recommencer le jeu à zéro pour vous deux. Continuer ?")) return;
+      
+      const gameRef = doc(db, 'games', GAME_ID);
+      await setDoc(gameRef, {
+          answers: {},
+          lastSeen: {}
+      });
+      window.location.reload();
+  };
+
+  return { gameState, loading, submitAnswer, updateLastSeen, resetGame, user };
 };
