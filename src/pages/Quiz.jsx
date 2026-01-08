@@ -112,17 +112,19 @@ export default function Quiz() {
   useEffect(() => {
       // SUCCESS
       if (totalHearts > prevHeartsRef.current) {
+          setShowFailure(false); // Coupe l'échec s'il y en avait un
           setShowCelebration(true);
-          const timer = setTimeout(() => setShowCelebration(false), 2500);
+          const timer = setTimeout(() => setShowCelebration(false), 1500); // 1.5s plus rapide
           return () => clearTimeout(timer);
       }
-      prevHeartsRef.current = totalHearts; // On met à jour la ref après la comparaison
+      prevHeartsRef.current = totalHearts;
 
       // ECHEC
       if (totalErrors > prevErrorsRef.current) {
+          setShowCelebration(false); // Coupe le succès s'il y en avait un
           setShowFailure(true);
-          const timer = setTimeout(() => setShowFailure(false), 2500);
-          // Pas besoin de return ici car pas de conflit majeur
+          const timer = setTimeout(() => setShowFailure(false), 1500);
+          return () => clearTimeout(timer);
       }
       prevErrorsRef.current = totalErrors;
   }, [totalHearts, totalErrors]);
