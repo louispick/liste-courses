@@ -1,4 +1,4 @@
-export const QUESTIONS = [
+const BASE_QUESTIONS = [
   // --- CLASSIQUES & BASIQUES ---
   { id: 1, text: "Pizza ou Burger ?", a: "Pizza", b: "Burger" },
   { id: 2, text: "Mer ou Montagne ?", a: "Mer", b: "Montagne" },
@@ -114,35 +114,36 @@ export const QUESTIONS = [
   { id: 98, text: "Jalousie ou Confiance aveugle ?", a: "Jaloux", b: "Confiance" },
   { id: 99, text: "Week-end surprise ou Week-end prévu ?", a: "Surprise", b: "Prévu" },
   { id: 100, text: "Partager le dessert ou Pas toucher ?", a: "Partager", b: "Pas toucher" }
-
-  // ... (Générer 1000 items rendrait le fichier énorme d'un coup, j'ai mis les 100 premières "Top Qualité".
-  // L'astuce pour l'infini : Je peux rajouter un générateur aléatoire si vous finissez les 100 !)
 ];
 
-// Fonction pour étendre la liste artificiellement si besoin pour atteindre 1000
-// en combinant des concepts, mais pour l'instant 100 questions de qualité valent mieux que 1000 nulles.
-// Je double la liste avec des variations pour atteindre un gros volume initial.
-const EXTENDED_QUESTIONS = [...QUESTIONS];
+const EXTENDED_QUESTIONS = [...BASE_QUESTIONS];
 
-// Génération procédurale de questions supplémentaires pour "l'infini"
-const THEMES = ["Manger", "Boire", "Visiter", "Acheter", "Regarder", "Écouter"];
-const OPTIONS_A = ["seul", "avec des amis", "le matin", "dehors", "vite", "au calme"];
-const OPTIONS_B = ["en couple", "en famille", "le soir", "dedans", "lentement", "en musique"];
+// Génération procédurale pour atteindre 1000 questions
+const THEMES = ["Manger", "Boire", "Visiter", "Acheter", "Regarder", "Écouter", "Pratiquer", "Offrir", "Conduire", "Porter"];
+const OPTIONS_A = ["seul", "avec des amis", "le matin", "dehors", "vite", "au calme", "en musique", "le lundi", "sous la pluie", "en rouge"];
+const OPTIONS_B = ["en couple", "en famille", "le soir", "dedans", "lentement", "dans le bruit", "en silence", "le vendredi", "au soleil", "en bleu"];
+
+// Seed simple pour que la génération soit constante entre les rechargements (pseudo-aléatoire déterministe)
+let seed = 12345;
+const random = () => {
+    const x = Math.sin(seed++) * 10000;
+    return x - Math.floor(x);
+};
 
 for(let i = 101; i <= 1000; i++) {
-    const theme = THEMES[Math.floor(Math.random() * THEMES.length)];
-    const optA = OPTIONS_A[Math.floor(Math.random() * OPTIONS_A.length)];
-    const optB = OPTIONS_B[Math.floor(Math.random() * OPTIONS_B.length)];
+    const theme = THEMES[Math.floor(random() * THEMES.length)];
+    const optA = OPTIONS_A[Math.floor(random() * OPTIONS_A.length)];
+    let optB = OPTIONS_B[Math.floor(random() * OPTIONS_B.length)];
     
-    // Évite les doublons exacts A/B
-    if(optA !== optB) {
-        EXTENDED_QUESTIONS.push({
-            id: i,
-            text: `${theme} : ${optA} ou ${optB} ?`,
-            a: optA,
-            b: optB
-        });
-    }
+    // Évite les doublons exacts A/B (même si les listes sont différentes, on sait jamais)
+    if(optA === optB) optB = OPTIONS_B[(Math.floor(random() * OPTIONS_B.length) + 1) % OPTIONS_B.length];
+
+    EXTENDED_QUESTIONS.push({
+        id: i,
+        text: `${theme} : ${optA} ou ${optB} ?`,
+        a: optA,
+        b: optB
+    });
 }
 
-export { EXTENDED_QUESTIONS as QUESTIONS };
+export const QUESTIONS = EXTENDED_QUESTIONS;

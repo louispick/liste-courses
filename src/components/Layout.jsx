@@ -1,5 +1,5 @@
 import { Outlet, useLocation, Link } from 'react-router-dom';
-import { List, ChefHat, History, User, LogOut } from 'lucide-react';
+import { List, ChefHat, History, User, LogOut, Heart } from 'lucide-react';
 import clsx from 'clsx';
 
 export default function Layout() {
