@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuiz } from '../hooks/useQuiz';
 import { QUESTIONS } from '../lib/questions';
-import { Heart, Loader2, RefreshCw, HeartCrack, Sparkles } from 'lucide-react';
+import { Heart, Loader2, RefreshCw, HeartCrack, Sparkles, Hourglass } from 'lucide-react';
 import clsx from 'clsx';
 
 export default function Quiz() {
@@ -203,18 +203,10 @@ export default function Quiz() {
                                 Pour toi ?
                             </p>
                             <div className="space-y-3">
-                                <ChoiceBtn onClick={() => setMyChoice(QUESTIONS[currentQIndex].a)} label={QUESTIONS[currentQIndex].a} selected={myChoice === QUESTIONS[currentQIndex].a} />
+                                <ChoiceBtn onClick={() => handleSelfChoice(QUESTIONS[currentQIndex].a)} label={QUESTIONS[currentQIndex].a} selected={myChoice === QUESTIONS[currentQIndex].a} />
                                 <div className="text-gray-300 text-xs font-bold my-1">OU</div>
-                                <ChoiceBtn onClick={() => setMyChoice(QUESTIONS[currentQIndex].b)} label={QUESTIONS[currentQIndex].b} selected={myChoice === QUESTIONS[currentQIndex].b} />
+                                <ChoiceBtn onClick={() => handleSelfChoice(QUESTIONS[currentQIndex].b)} label={QUESTIONS[currentQIndex].b} selected={myChoice === QUESTIONS[currentQIndex].b} />
                             </div>
-                            {myChoice && (
-                                <button 
-                                    onClick={() => setStep('partner')}
-                                    className="mt-6 w-full bg-deep-blue text-white font-bold py-3 rounded-xl animate-in zoom-in duration-200"
-                                >
-                                    Valider
-                                </button>
-                            )}
                         </div>
                     )}
 
