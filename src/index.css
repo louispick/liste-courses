@@ -9,6 +9,22 @@
   --radius-2xl: 1.5rem;
   --radius-3xl: 2rem;
   --radius-pill: 9999px;
+  
+  --animate-float-up: floatUp 2s ease-out forwards;
+  
+  @keyframes floatUp {
+    0% {
+      opacity: 1;
+      transform: translateY(0) scale(0.5);
+    }
+    50% {
+      transform: translateY(-50px) scale(1.2);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-150px) scale(1.5);
+    }
+  }
 }
 
 body {
