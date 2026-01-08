@@ -22,8 +22,8 @@ export const useQuiz = () => {
         setDoc(gameRef, {
           answers: {}, 
           lastSeen: {},
-          currentSession: 1, // Nouvelle propriété
-          sessionHistory: [] // [{ id: 1, hearts: 15, errors: 5, date: ... }]
+          currentSession: 1,
+          sessionHistory: {} // Changement: Object/Map au lieu d'Array pour éviter les doublons
         });
       }
       setLoading(false);
@@ -59,17 +59,11 @@ export const useQuiz = () => {
   const completeSession = async (sessionData) => {
       const gameRef = doc(db, 'games', GAME_ID);
       
-      // On archive la session et on passe à la suivante
-      // On utilise arrayUnion pour ajouter à l'historique
-      // On incrémente currentSession
-      
-      // Note: Pour éviter que les deux cliquent en même temps et incrémentent 2 fois,
-      // on vérifie si la session actuelle en base est bien celle qu'on veut fermer.
-      // Mais avec Firestore increment, c'est atomique. On va juste check côté UI.
-      
+      // Utilisation d'une clé map pour éviter les doublons (idempotence)
+      // Si Mathilde et Louis envoient la même chose, ça écrase au lieu d'ajouter
       await updateDoc(gameRef, {
-          sessionHistory: arrayUnion(sessionData),
-          currentSession: increment(1)
+          [`sessionHistory.s${sessionData.id}`]: sessionData,
+          currentSession: sessionData.id + 1 // On force la valeur suivante explicitement
       });
   };
 
@@ -81,7 +75,7 @@ export const useQuiz = () => {
           answers: {},
           lastSeen: {},
           currentSession: 1,
-          sessionHistory: []
+          sessionHistory: {}
       });
       window.location.reload();
   };
