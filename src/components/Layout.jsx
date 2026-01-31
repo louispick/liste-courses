@@ -1,13 +1,14 @@
 import { Outlet, useLocation, Link } from 'react-router-dom';
-import { List, ChefHat, History, User, LogOut, Heart } from 'lucide-react';
+import { List, ChefHat, History, User, LogOut, Heart, Luggage } from 'lucide-react';
 import clsx from 'clsx';
 
 export default function Layout() {
   const { pathname } = useLocation();
 
   const navItems = [
-    { path: '/', icon: List, label: 'Liste' },
+    { path: '/', icon: List, label: 'Courses' },
     { path: '/recipes', icon: ChefHat, label: 'Recettes' },
+    { path: '/packing', icon: Luggage, label: 'Valises' }, // Nouvel onglet
     { path: '/quiz', icon: Heart, label: 'Jeu' },
     { path: '/history', icon: History, label: 'Historique' },
   ];

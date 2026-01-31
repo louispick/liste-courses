@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import Recipes from './pages/Recipes';
 import History from './pages/History';
 import Quiz from './pages/Quiz';
+import Packing from './pages/Packing';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
         }>
           <Route index element={<Home />} />
           <Route path="recipes" element={<Recipes />} />
+          <Route path="packing" element={<Packing />} />
           <Route path="history" element={<History />} />
           <Route path="quiz" element={<Quiz />} />
         </Route>
