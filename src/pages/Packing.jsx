@@ -104,7 +104,7 @@ export default function Packing() {
 
                       <ul className="space-y-2">
                           {catItems.map(item => (
-                              <li key={item.id} className="flex items-center group">
+                              <li key={item.id} className="flex items-center group justify-between">
                                   <button
                                     onClick={() => toggleItem(item.id, item.checked)}
                                     className={clsx(
@@ -123,9 +123,11 @@ export default function Packing() {
                                       </span>
                                   </button>
                                   
+                                  {/* Bouton Poubelle explicite */}
                                   <button
                                     onClick={() => deleteItem(item.id)}
-                                    className="p-2 text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    className="p-2 text-gray-300 hover:text-red-400"
+                                    title="Supprimer définitivement"
                                   >
                                       <Trash2 className="w-4 h-4" />
                                   </button>
