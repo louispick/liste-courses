@@ -182,16 +182,6 @@ function ListItem({ item, onToggle, onDelete, onUpdate }) {
                     </div>
                 )}
             </div>
-
-            {/* Delete Button */}
-            {!isEditing && (
-                <button
-                    onClick={() => onDelete(item.id)}
-                    className="text-gray-300 hover:text-red-400 p-2 opacity-0 group-hover:opacity-100 transition-opacity absolute right-0 bg-white/80 backdrop-blur-sm rounded-lg"
-                >
-                    <Trash2 className="w-5 h-5" />
-                </button>
-            )}
         </li>
     );
 }
