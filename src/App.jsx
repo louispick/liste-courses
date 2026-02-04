@@ -5,7 +5,7 @@ import Login from './pages/Login';
 import Home from './pages/Home';
 import Recipes from './pages/Recipes';
 import History from './pages/History';
-import Quiz from './pages/Quiz';
+import Pictionary from './pages/Pictionary'; // Remplace Quiz
 import Packing from './pages/Packing';
 
 function App() {
@@ -23,7 +23,7 @@ function App() {
           <Route path="recipes" element={<Recipes />} />
           <Route path="packing" element={<Packing />} />
           <Route path="history" element={<History />} />
-          <Route path="quiz" element={<Quiz />} />
+          <Route path="game" element={<Pictionary />} /> 
         </Route>
 
         <Route path="*" element={<Navigate to="/" />} />
