@@ -22,11 +22,15 @@ export default function Login() {
     try {
       await resetPassword(email.trim());
     } catch (err) {
-      if (err.code === 'auth/invalid-email') {
-        setError("Adresse e-mail invalide.");
+      // Compte inconnu : on ne le révèle pas. Toute autre erreur est affichée.
+      if (err.code !== 'auth/user-not-found') {
+        setError(
+          err.code === 'auth/invalid-email'
+            ? 'Adresse e-mail invalide.'
+            : `Impossible d'envoyer l'e-mail (${err.code || err.message}).`
+        );
         return;
       }
-      // les autres erreurs (compte inconnu…) ne sont pas révélées volontairement
     }
     setInfo('Si ce compte existe, un e-mail de réinitialisation vient d\'être envoyé (pense aux spams).');
   };
@@ -39,7 +43,7 @@ export default function Login() {
       await login(email.trim(), password);
     } catch (err) {
       const wrong = ['auth/invalid-credential', 'auth/wrong-password', 'auth/user-not-found', 'auth/invalid-email'];
-      setError(wrong.includes(err.code) ? 'Email ou mot de passe incorrect.' : 'Connexion impossible, réessaie dans un instant.');
+      setError(wrong.includes(err.code) ? 'Email ou mot de passe incorrect.' : `Connexion impossible (${err.code || err.message}).`);
     }
   };
 
