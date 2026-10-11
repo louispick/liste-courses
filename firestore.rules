@@ -1,14 +1,14 @@
 rules_version = '2';
 
 // À coller dans Firebase Console → Firestore → Règles (puis "Publier").
-// Seuls les deux comptes ci-dessous peuvent lire/écrire. Remplace les adresses par les vôtres.
+// Seuls les deux comptes ci-dessous peuvent lire/écrire.
 service cloud.firestore {
   match /databases/{database}/documents {
     function isCouple() {
       return request.auth != null
         && request.auth.token.email in [
-          'REMPLACER_PAR_TON_EMAIL_DE_CONNEXION',
-          'REMPLACER_PAR_EMAIL_DE_MATHILDE'
+          'louis.pick@gmail.com',
+          'mathilde_201@mailo.com'
         ];
     }
 
