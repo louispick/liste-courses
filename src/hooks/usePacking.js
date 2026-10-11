@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
+import { itemKey } from '../lib/text';
 import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, deleteDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
 
 export const usePacking = () => {
@@ -25,15 +26,16 @@ export const usePacking = () => {
   }, []);
 
   const addItem = async (name, category) => {
-    if (!name.trim()) return;
-    
-    // On permet les doublons de noms (ex: "Pantalon" pour Louis et "Pantalon" pour Isao)
-    // Mais on évite les doublons stricts (Même nom DANS la même catégorie)
-    const exists = items.some(i => i.name.toLowerCase() === name.toLowerCase() && i.category === category);
+    const clean = name.trim();
+    if (!clean) return;
+
+    // Même nom autorisé pour des personnes différentes, pas deux fois pour la même personne
+    const key = itemKey(clean);
+    const exists = items.some(i => itemKey(i.name) === key && i.category === category);
     
     if (!exists) {
         await addDoc(collection(db, 'packing'), {
-          name: name.trim(),
+          name: clean,
           category,
           checked: false,
           createdAt: serverTimestamp()

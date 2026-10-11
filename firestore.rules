@@ -1,0 +1,24 @@
+rules_version = '2';
+
+// À coller dans Firebase Console → Firestore → Règles (puis "Publier").
+// Seuls les deux comptes ci-dessous peuvent lire/écrire. Remplace les adresses par les vôtres.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isCouple() {
+      return request.auth != null
+        && request.auth.token.email in [
+          'REMPLACER_PAR_TON_EMAIL_DE_CONNEXION',
+          'REMPLACER_PAR_EMAIL_DE_MATHILDE'
+        ];
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    match /items/{id}     { allow read, write: if isCouple(); }
+    match /history/{id}   { allow read, write: if isCouple(); }
+    match /recipes/{id}   { allow read, write: if isCouple(); }
+    match /packing/{id}   { allow read, write: if isCouple(); }
+    match /games/{id}     { allow read, write: if isCouple(); }
+  }
+}

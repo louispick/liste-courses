@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { Navigate } from 'react-router-dom';
-import { Sun, Moon } from 'lucide-react';
+import { Sun } from 'lucide-react';
 
 export default function Login() {
-  const { user, login, signup } = useAuth();
-  const [isLogin, setIsLogin] = useState(true);
+  const { user, login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -16,13 +15,10 @@ export default function Login() {
     e.preventDefault();
     setError('');
     try {
-      if (isLogin) {
-        await login(email, password);
-      } else {
-        await signup(email, password);
-      }
+      await login(email.trim(), password);
     } catch (err) {
-      setError(err.message);
+      const wrong = ['auth/invalid-credential', 'auth/wrong-password', 'auth/user-not-found', 'auth/invalid-email'];
+      setError(wrong.includes(err.code) ? 'Email ou mot de passe incorrect.' : 'Connexion impossible, réessaie dans un instant.');
     }
   };
 
@@ -35,7 +31,7 @@ export default function Login() {
             </div>
         </div>
         <h1 className="text-2xl font-bold text-deep-blue mb-2">
-          {isLogin ? 'Bon retour !' : 'Bienvenue'}
+          Bon retour !
         </h1>
         <p className="text-gray-500 mb-8">
           Mathilde & Louis
@@ -44,6 +40,7 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="email"
+            autoComplete="username"
             placeholder="Email"
             className="input-soft"
             value={email}
@@ -52,6 +49,7 @@ export default function Login() {
           />
           <input
             type="password"
+            autoComplete="current-password"
             placeholder="Mot de passe"
             className="input-soft"
             value={password}
@@ -65,16 +63,10 @@ export default function Login() {
             type="submit"
             className="w-full py-4 rounded-2xl bg-deep-blue text-white font-bold text-lg hover:bg-blue-800 transition-colors shadow-lg shadow-blue-900/20"
           >
-            {isLogin ? 'Se connecter' : "S'inscrire"}
+            Se connecter
           </button>
         </form>
 
-        <button
-          onClick={() => setIsLogin(!isLogin)}
-          className="mt-6 text-sm text-gray-500 hover:text-deep-blue underline"
-        >
-          {isLogin ? "Pas encore de compte ? Créer un compte" : "Déjà un compte ? Se connecter"}
-        </button>
       </div>
     </div>
   );
