@@ -2,7 +2,7 @@
 
 Liste de courses collaborative (temps réel), recettes, valises de voyage et petit jeu de couple.
 
-- **Production** : https://attrape-reves-courses.pages.dev
+- **Production** : https://mathilde-et-louis-courses.pages.dev
 - **Stack** : React 19 + Vite + Tailwind 4, Firebase (Auth + Firestore), Cloudflare Pages
 
 ## Fonctionnalités

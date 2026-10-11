@@ -4,16 +4,37 @@ import { Navigate } from 'react-router-dom';
 import { Sun } from 'lucide-react';
 
 export default function Login() {
-  const { user, login } = useAuth();
+  const { user, login, resetPassword } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
 
   if (user) return <Navigate to="/" />;
+
+  const handleReset = async () => {
+    setError('');
+    setInfo('');
+    if (!email.trim()) {
+      setError("Saisis d'abord ton e-mail ci-dessus.");
+      return;
+    }
+    try {
+      await resetPassword(email.trim());
+    } catch (err) {
+      if (err.code === 'auth/invalid-email') {
+        setError("Adresse e-mail invalide.");
+        return;
+      }
+      // les autres erreurs (compte inconnu…) ne sont pas révélées volontairement
+    }
+    setInfo('Si ce compte existe, un e-mail de réinitialisation vient d\'être envoyé (pense aux spams).');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setInfo('');
     try {
       await login(email.trim(), password);
     } catch (err) {
@@ -58,6 +79,7 @@ export default function Login() {
           />
           
           {error && <p className="text-red-500 text-sm">{error}</p>}
+          {info && <p className="text-green-600 text-sm">{info}</p>}
 
           <button
             type="submit"
@@ -66,6 +88,14 @@ export default function Login() {
             Se connecter
           </button>
         </form>
+
+        <button
+          type="button"
+          onClick={handleReset}
+          className="mt-6 text-sm text-gray-500 hover:text-deep-blue underline"
+        >
+          Mot de passe oublié ?
+        </button>
 
       </div>
     </div>
