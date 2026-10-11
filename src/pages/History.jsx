@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
-import { collection, query, orderBy, limit, getDocs, where, writeBatch } from 'firebase/firestore';
+import { collection, query, limit, getDocs, writeBatch, doc } from 'firebase/firestore';
+import { itemKey } from '../lib/text';
 import { useShoppingList } from '../hooks/useShoppingList';
 import { Clock, Plus, Loader2, Trash2, TrendingUp } from 'lucide-react';
 
@@ -19,7 +20,7 @@ export default function History() {
         // Pour éviter l'erreur d'index bloquante maintenant, on trie par fréquence en JS.
         // On charge tout (limit 200) et on trie côté client, c'est plus robuste pour l'instant.
         
-        const q = query(collection(db, 'history'), limit(200)); 
+        const q = query(collection(db, 'history'), limit(500));
         const snapshot = await getDocs(q);
         
         if (!isMounted) return;
@@ -34,19 +35,20 @@ export default function History() {
             };
         });
 
-        // Dédoublonnage visuel (au cas où il reste des doublons en base)
+        // Fusion des doublons (anciens documents à identifiant aléatoire inclus) : on additionne
+        // les fréquences et on garde la date d'achat la plus récente.
         const uniqueMap = new Map();
         rawData.forEach(item => {
-          const key = item.name.toLowerCase();
-          // On garde celui avec la plus haute fréquence ou le plus récent
-          if (!uniqueMap.has(key)) {
-            uniqueMap.set(key, item);
+          const key = itemKey(item.name) || item.id;
+          const existing = uniqueMap.get(key);
+          if (!existing) {
+            uniqueMap.set(key, { ...item, ids: [item.id] });
           } else {
-             // Si doublon, on prend le meilleur (logique de fusion visuelle)
-             const existing = uniqueMap.get(key);
-             if (item.frequency > existing.frequency) {
-                 uniqueMap.set(key, item);
-             }
+            existing.frequency += item.frequency;
+            existing.ids.push(item.id);
+            if ((item.lastBought?.seconds || 0) > (existing.lastBought?.seconds || 0)) {
+              existing.lastBought = item.lastBought;
+            }
           }
         });
 
@@ -81,27 +83,26 @@ export default function History() {
 
   const handleQuickAdd = async (item) => {
     try {
-        await addItem({
+        const result = await addItem({
             name: item.name,
             category: item.category,
-            qty: 1, 
-            unit: item.defaultUnit
+            qty: 1,
+            unit: item.defaultUnit || ''
         });
+        if (result?.status === 'duplicate') {
+            await addItem({ name: item.name, category: item.category, qty: 1, unit: item.defaultUnit || '' }, { force: true });
+        }
     } catch (e) {
         console.error("Erreur ajout rapide", e);
     }
   };
 
-  const handleDeleteFromHistory = async (itemName, e) => {
-    e.stopPropagation(); 
+  const handleDeleteFromHistory = async (item, e) => {
+    e.stopPropagation();
     try {
-        setHistoryItems(prev => prev.filter(i => i.name !== itemName));
-        const q = query(collection(db, 'history'), where('name', '==', itemName));
-        const snapshot = await getDocs(q);
+        setHistoryItems(prev => prev.filter(i => i.ids[0] !== item.ids[0]));
         const batch = writeBatch(db);
-        snapshot.docs.forEach(doc => {
-            batch.delete(doc.ref);
-        });
+        item.ids.forEach(id => batch.delete(doc(db, 'history', id)));
         await batch.commit();
     } catch (error) {
         console.error("Erreur suppression historique:", error);
@@ -132,9 +133,9 @@ export default function History() {
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3">
-            {historyItems.map((item, idx) => (
+            {historyItems.map((item) => (
                 <div
-                    key={idx}
+                    key={item.ids[0]}
                     onClick={() => handleQuickAdd(item)}
                     className="bg-white p-4 rounded-2xl soft-shadow text-left hover:bg-gray-50 transition-colors flex flex-col justify-between group h-28 relative cursor-pointer"
                 >
@@ -144,7 +145,7 @@ export default function History() {
                         </span>
                         
                         <button
-                            onClick={(e) => handleDeleteFromHistory(item.name, e)}
+                            onClick={(e) => handleDeleteFromHistory(item, e)}
                             className="text-gray-300 hover:text-red-400 absolute top-2 right-2 p-2 bg-white/50 rounded-full"
                         >
                             <Trash2 className="w-4 h-4" />

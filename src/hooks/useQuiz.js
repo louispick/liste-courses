@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
-import { doc, onSnapshot, setDoc, updateDoc, deleteField, writeBatch } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, updateDoc, deleteField } from 'firebase/firestore';
 import { useAuth } from './useAuth';
 import { QUESTIONS } from '../lib/questions';
 
@@ -11,38 +11,32 @@ export const useQuiz = () => {
   const [gameState, setGameState] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const GAME_ID = "couple_game_1";
+  // v2 : nouvelle banque de questions (ids repartis de 1). L'ancienne partie reste intacte dans
+  // Firestore sous "couple_game_1" ; repasser à cet identifiant la fait réapparaître (avec l'ancien
+  // fichier de questions).
+  const GAME_ID = "couple_game_2";
 
   useEffect(() => {
     if (!user) return;
 
     const gameRef = doc(db, 'games', GAME_ID);
     
-    const unsubscribe = onSnapshot(gameRef, async (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        
-        // MIGRATION DE SURETÉ : Si sessionHistory est un Array (vieux format), on le convertit en Object
-        if (Array.isArray(data.sessionHistory)) {
-            const newHistory = {};
-            data.sessionHistory.forEach(s => {
-                if(s && s.id) newHistory[`s${s.id}`] = s;
-            });
-            await updateDoc(gameRef, { sessionHistory: newHistory });
-            return; // Le snapshot va se re-déclencher
+    const unsubscribe = onSnapshot(
+      gameRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          setGameState(docSnap.data());
+        } else {
+          // merge : si les deux joueurs ouvrent le jeu en même temps, on n'écrase rien
+          setDoc(gameRef, { answers: {}, lastSeen: {}, currentSession: 1, sessionHistory: {} }, { merge: true });
         }
-
-        setGameState(data);
-      } else {
-        setDoc(gameRef, {
-          answers: {}, 
-          lastSeen: {},
-          currentSession: 1,
-          sessionHistory: {} 
-        });
+        setLoading(false);
+      },
+      (err) => {
+        console.error('Quiz Firestore error:', err);
+        setLoading(false);
       }
-      setLoading(false);
-    });
+    );
 
     return unsubscribe;
   }, [user]);
@@ -107,9 +101,6 @@ export const useQuiz = () => {
       // C'est plus sympa de voir "Ah j'avais fait 15/20 avant".
 
       await updateDoc(gameRef, updates);
-      
-      // Petit reload pour nettoyer les états locaux si besoin
-      window.location.reload();
   };
 
   return { gameState, loading, submitAnswer, updateLastSeen, completeSession, resetSessionData, user };

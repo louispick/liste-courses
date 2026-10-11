@@ -5,16 +5,8 @@ import CategoryList from '../components/CategoryList';
 import { Loader2, LogOut } from 'lucide-react';
 
 export default function Home() {
-  const { items, loading, error, addItem, updateItem, toggleItem, deleteItem, clearCheckedItems } = useShoppingList();
+  const { items, loading, error, addItem, updateItem, toggleItem, clearCheckedItems } = useShoppingList();
   const { logout } = useAuth();
-
-  const handleAdd = async (parsedItem) => {
-    try {
-        await addItem(parsedItem);
-    } catch (e) {
-        alert("Erreur lors de l'ajout: " + e.message);
-    }
-  };
 
   const handleLogout = () => {
       if(confirm("Se déconnecter ?")) {
@@ -39,7 +31,7 @@ export default function Home() {
         </button>
       </header>
 
-      <SmartInput onAdd={handleAdd} existingItems={items} />
+      <SmartInput onAdd={addItem} />
 
       {error && (
         <div className="bg-red-50 text-red-600 p-4 rounded-2xl mb-6 text-sm">
@@ -56,7 +48,6 @@ export default function Home() {
         <CategoryList 
           items={items} 
           onToggle={toggleItem} 
-          onDelete={deleteItem}
           onUpdate={updateItem}
           onClearChecked={clearCheckedItems}
         />

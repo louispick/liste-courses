@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { useRecipes } from '../hooks/useRecipes';
 import { useShoppingList } from '../hooks/useShoppingList';
-import { parseInput } from '../lib/parser';
+import { parseMany, itemToText, formatQuantity } from '../lib/parser';
 import { Plus, Trash2, ChefHat, ChevronDown, ChevronUp, Pencil, X } from 'lucide-react';
-import clsx from 'clsx';
 
 export default function Recipes() {
   const { recipes, addRecipe, updateRecipe, deleteRecipe } = useRecipes();
@@ -16,6 +15,7 @@ export default function Recipes() {
   const [newIngredients, setNewIngredients] = useState('');
   
   const [expandedId, setExpandedId] = useState(null);
+  const [notice, setNotice] = useState('');
 
   const resetForm = () => {
       setNewTitle('');
@@ -30,16 +30,7 @@ export default function Recipes() {
       setNewTitle(recipe.title);
       
       // Reconversion des ingrédients en texte pour l'édition
-      const textIngredients = recipe.ingredients.map(i => {
-          let line = i.name;
-          // Formatage simple : "Qty Unit Name" ou "Name"
-          if (i.qty && i.qty !== 1) {
-              line = `${i.qty}${i.unit ? i.unit : ''} ${i.name}`; 
-          } else if (i.unit) {
-              line = `${i.qty}${i.unit} ${i.name}`;
-          }
-          return line;
-      }).join('\n');
+      const textIngredients = recipe.ingredients.map(itemToText).join('\n');
 
       setNewIngredients(textIngredients);
       setShowForm(true);
@@ -50,10 +41,8 @@ export default function Recipes() {
     e.preventDefault();
     if (!newTitle.trim() || !newIngredients.trim()) return;
 
-    const lines = newIngredients.split('\n');
-    const ingredients = lines
-      .map(line => parseInput(line))
-      .filter(item => item !== null);
+    // Une ligne (ou une virgule) = un ingrédient
+    const ingredients = parseMany(newIngredients);
 
     if (ingredients.length === 0) return;
 
@@ -68,14 +57,36 @@ export default function Recipes() {
 
   const handleAddAll = async (e, recipe) => {
     e.stopPropagation();
-    for (const ingredient of recipe.ingredients) {
-        await addItem(ingredient);
+    try {
+        for (const ingredient of recipe.ingredients) {
+            await addIngredient(ingredient);
+        }
+        flash(`${recipe.ingredients.length} ingrédients ajoutés à la liste`);
+    } catch (err) {
+        alert("Erreur lors de l'ajout : " + err.message);
     }
   };
 
   const handleAddOne = async (e, ingredient) => {
     e.stopPropagation();
-    await addItem(ingredient);
+    try {
+        await addIngredient(ingredient);
+        flash(`${ingredient.name} ajouté à la liste`);
+    } catch (err) {
+        alert("Erreur lors de l'ajout : " + err.message);
+    }
+  };
+
+  const flash = (message) => {
+      setNotice(message);
+      setTimeout(() => setNotice(''), 2500);
+  };
+
+  // Dans une recette, on ne demande pas de confirmation : fusion si c'est le même article
+  // (même unité), sinon ajout séparé.
+  const addIngredient = async (ingredient) => {
+    const result = await addItem(ingredient);
+    if (result?.status === 'duplicate') await addItem(ingredient, { force: true });
   };
 
   return (
@@ -129,6 +140,12 @@ export default function Recipes() {
         </form>
       )}
 
+      {notice && (
+        <div role="status" className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-deep-blue text-white text-sm rounded-xl px-4 py-2 shadow-lg">
+          {notice}
+        </div>
+      )}
+
       <div className="space-y-4">
         {recipes.map(recipe => {
             const isExpanded = expandedId === recipe.id;
@@ -174,7 +191,8 @@ export default function Recipes() {
 
                              {/* Delete Button */}
                              <button 
-                                onClick={(e) => { e.stopPropagation(); deleteRecipe(recipe.id); }} 
+                                onClick={(e) => { e.stopPropagation(); if (confirm(`Supprimer la recette « ${recipe.title} » ?`)) deleteRecipe(recipe.id); }}
+                                aria-label="Supprimer la recette" 
                                 className="p-2 text-gray-300 hover:text-red-400"
                             >
                                 <Trash2 className="w-4 h-4" />
@@ -198,7 +216,7 @@ export default function Recipes() {
                                 {recipe.ingredients.map((ing, idx) => (
                                     <li key={idx} className="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100">
                                         <span className="text-gray-700 font-medium">
-                                            {ing.name} <span className="text-gray-400 font-normal text-sm ml-1">{ing.qty > 1 ? `(${ing.qty} ${ing.unit})` : ''}</span>
+                                            {ing.name} <span className="text-gray-400 font-normal text-sm ml-1">{ing.qty > 1 || ing.unit ? `(${formatQuantity(ing.qty, ing.unit)})` : ''}</span>
                                         </span>
                                         <button 
                                             onClick={(e) => handleAddOne(e, ing)}

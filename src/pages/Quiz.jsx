@@ -77,10 +77,17 @@ export default function Quiz() {
           if (i === QUESTIONS.length - 1) myProgress = QUESTIONS.length;
       }
 
-      const otherKey = Object.keys(gameState.answers?.[1] || {}).find(k => k !== userKey) 
-                       || Object.keys(gameState.answers?.[QUESTIONS[0].id] || {}).find(k => k !== userKey);
+      // Le partenaire = n'importe quelle autre clé présente dans les réponses
+      let otherKey = null;
+      for (const byUser of Object.values(gameState.answers)) {
+          otherKey = Object.keys(byUser).find(k => k !== userKey);
+          if (otherKey) break;
+      }
       if (otherKey) {
-          partnerProgress = Object.values(gameState.answers).filter(a => a[otherKey]).length;
+          partnerProgress = QUESTIONS.length;
+          for (let i = 0; i < QUESTIONS.length; i++) {
+              if (!gameState.answers[QUESTIONS[i].id]?.[otherKey]) { partnerProgress = i; break; }
+          }
       }
 
       // 3. Détection Nouveautés
@@ -131,19 +138,31 @@ export default function Quiz() {
 
   useEffect(() => {
       if (!gameState) return;
-      if (currentQIndex < activeSessionStart) setCurrentQIndex(activeSessionStart);
-      if (myProgress > currentQIndex && myProgress < activeSessionEnd) setCurrentQIndex(myProgress);
+      // La question affichée suit toujours ma progression dans la session active
+      const target = Math.min(Math.max(myProgress, activeSessionStart), activeSessionEnd - 1);
+      if (target !== currentQIndex) setCurrentQIndex(target);
       if (!showNewHearts && myProgress > (gameState.lastSeen?.[user.email.replace(/\./g, '_')] || 0)) {
            updateLastSeen(myProgress);
       }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState, myProgress, showNewHearts, currentSession]);
 
   const handleSelfChoice = (choice) => { setMyChoice(choice); setStep('partner'); };
-  const handlePartnerChoice = async (choice) => { setStep('sending'); await submitAnswer(QUESTIONS[currentQIndex].id, myChoice, choice); setStep('self'); setMyChoice(null); };
+  const handlePartnerChoice = async (choice) => {
+      setStep('sending');
+      try {
+          await submitAnswer(QUESTIONS[currentQIndex].id, myChoice, choice);
+      } catch (err) {
+          console.error(err);
+          alert("Réponse non enregistrée, réessaie.");
+      }
+      setStep('self');
+      setMyChoice(null);
+  };
   
   const handleBack = () => {
+      // On ne peut revenir que sur la question en cours (une réponse envoyée est définitive)
       if (step === 'partner') { setStep('self'); setMyChoice(null); }
-      else if (currentQIndex > activeSessionStart) { setCurrentQIndex(prev => prev - 1); setStep('self'); setMyChoice(null); }
   };
 
   const closeNewHearts = () => { setShowNewHearts(false); updateLastSeen(myProgress); };
@@ -159,14 +178,27 @@ export default function Quiz() {
 
   const handleResetCurrentSession = async () => {
       if(confirm(`Recommencer la session ${currentSession} à zéro ?`)) {
-          await resetSessionData(currentSession);
+          await resetLocalAfter(() => resetSessionData(currentSession), currentSession);
       }
+  };
+
+  // Après une remise à zéro, on repart proprement de la 1re question de la session
+  const resetLocalAfter = async (action, sessionId) => {
+      await action();
+      setStep('self');
+      setMyChoice(null);
+      setCurrentQIndex((sessionId - 1) * BATCH_SIZE);
+      setShowNewHearts(false);
+      setShowCelebration(false);
+      setShowFailure(false);
+      setViewingSession(null);
+      setShowHistory(false);
   };
 
   const handleReplaySession = async (e, sessionId) => {
       e.stopPropagation();
       if(confirm(`Rejouer la Session ${sessionId} ?\nCela deviendra votre session active.`)) {
-          await resetSessionData(sessionId);
+          await resetLocalAfter(() => resetSessionData(sessionId), sessionId);
       }
   };
 
@@ -189,27 +221,6 @@ export default function Quiz() {
       const end = Math.min(Math.max(myProgress, partnerProgress), activeSessionEnd);
       questionsToShow = QUESTIONS.slice(start, end);
   }
-
-  // --- NOUVEAU DESIGN CLAIR (CARD BASED) ---
-  const ResultCard = ({ label, choice, guess, guesserName, isCorrect }) => (
-      <div className={clsx(
-          "flex justify-between items-center p-2 rounded-lg text-xs mb-1",
-          isCorrect ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800"
-      )}>
-          <div className="flex flex-col">
-              <span className="font-bold mb-0.5">{label}</span>
-              <span className="text-gray-600">Choix : <strong className="text-deep-blue">{choice || "?"}</strong></span>
-          </div>
-          
-          <div className="flex flex-col items-end">
-              <div className="flex items-center gap-1 mb-0.5">
-                  <span className="text-[10px] uppercase tracking-wide opacity-60">Vu par {guesserName}</span>
-                  {isCorrect ? <Check className="w-3 h-3 text-green-600" /> : <X className="w-3 h-3 text-red-500" />}
-              </div>
-              <span className="font-medium bg-white/50 px-2 rounded">{guess || "?"}</span>
-          </div>
-      </div>
-  );
 
   const QuestionsList = ({ questions, sessionOffset }) => (
       <div className="space-y-6 pb-8">
@@ -246,7 +257,7 @@ export default function Quiz() {
                               globalStatus === 'success' ? "border-green-200 text-green-600" :
                               globalStatus === 'fail' ? "border-red-200 text-red-400" : "border-gray-200 text-gray-400"
                           )}>
-                              {(sessionOffset || activeSessionStart) + idx + 1}
+                              {(sessionOffset ?? activeSessionStart) + idx + 1}
                           </div>
                           <h3 className="font-bold text-deep-blue text-sm flex-1 leading-tight">{q.text}</h3>
                           
@@ -344,19 +355,17 @@ export default function Quiz() {
                   )}
 
                   {/* VUE 2 : DÉTAIL D'UNE SESSION (ARCHIVÉE OU COURANTE) */}
-                  {(historyTab === 'answers' || viewingSession) && (
-                      <QuestionsList 
-                        questions={questionsToShow} 
-                        sessionOffset={viewingSession ? (viewingSession.id - 1) * BATCH_SIZE : activeSessionStart} 
-                      />
-                  )}
+                  {(historyTab === 'answers' || viewingSession) && QuestionsList({
+                      questions: questionsToShow,
+                      sessionOffset: viewingSession ? (viewingSession.id - 1) * BATCH_SIZE : activeSessionStart,
+                  })}
               </div>
           </div>
       )}
 
       {/* HEADER SCORE (CLIQUABLE) */}
       <div onClick={() => { setShowHistory(true); setHistoryTab('answers'); }} className="flex justify-between items-center mb-6 bg-white p-3 rounded-2xl soft-shadow relative cursor-pointer active:scale-[0.98] transition-transform hover:bg-gray-50">
-          {(currentQIndex > activeSessionStart || step === 'partner') && !isSessionFinishedMe && (
+          {step === 'partner' && !isSessionFinishedMe && (
               <button onClick={(e) => { e.stopPropagation(); handleBack(); }} className="absolute left-[-16px] bg-white p-2 rounded-full shadow-md text-gray-400 hover:text-deep-blue z-10"><ArrowLeft className="w-5 h-5" /></button>
           )}
           <div className="flex items-center gap-2 px-2 bg-yellow-50 rounded-lg py-1 border border-yellow-100">

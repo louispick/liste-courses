@@ -4,7 +4,7 @@ import { Luggage, Plus, Trash2, CheckCircle2, RotateCcw, User, Users, Baby } fro
 import clsx from 'clsx';
 
 export default function Packing() {
-  const { items, loading, addItem, toggleItem, deleteItem, resetAll, CATEGORIES } = usePacking();
+  const { items, addItem, toggleItem, deleteItem, resetAll, CATEGORIES } = usePacking();
   const [newItem, setNewItem] = useState('');
   const [selectedCat, setSelectedCat] = useState('Général');
 
